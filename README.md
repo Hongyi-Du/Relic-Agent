@@ -112,6 +112,29 @@ current supported surface.
 | Docker on Linux / Docker Desktop | Full for this milestone | Linux container |
 | macOS | Best effort | Native CLI if checks pass |
 
+## Full regression test suite / 完整回归测试
+
+`main` contains the release-focused runtime, replay, Inspector, wrapper, and
+Docker-boundary tests for this milestone. The default `uv run pytest` command
+does not contact a model provider. No current default-suite test is marked
+`live`, `llm`, `slow`, or `docker`; future tests using those markers must stay
+opt-in because they may require credentials, substantial runtime, or a Docker
+daemon.
+
+The handoff allows a future `full-tests` branch for sanitized historical
+agent-runtime regressions, but no such branch is present in this release
+snapshot. If it is published later, it must be based on the matching release
+commit, add test depth rather than a second runtime implementation, and exclude
+paper benchmark tests, obsolete systems, private fixtures, credentials, and
+development-machine paths.
+
+`main` 包含本阶段默认执行的 release-focused tests，`uv run pytest` 默认不会
+调用模型 provider。当前默认测试集没有标记为 `live`、`llm`、`slow` 或
+`docker` 的测试；未来使用这些 marker 的测试必须只由用户显式启用。交接文档
+允许未来建立保存清理后 agent-runtime 历史回归测试的
+`full-tests` 分支；当前 release 快照尚未发布该分支，因此这里不提供会失败的
+切换命令。
+
 ## 中文说明
 
 > **运行你自己的 Relic organization。**
