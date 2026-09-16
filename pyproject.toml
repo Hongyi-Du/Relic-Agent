@@ -57,3 +57,5 @@ select = ["E4", "E7", "E9", "F"]
 "organization_core/evidence.py" = ["F401"]
 # The source-exact HCI protocol object keeps this historical unused import.
 "relic_agent/source_b3/protocols/objects.py" = ["F401"]
+# The source-ported HCI episode manager retains this historical unused import.
+"relic_agent/source_b3/episodes/episode_manager.py" = ["F401"]

@@ -1,8 +1,9 @@
-"""Compatibility trace ledger, not the canonical organization event contract.
+"""Compatibility trace ledger, not an HCI source-event contract.
 
-New host integrations use :mod:`organization_core`. This small ledger remains
-only so the existing public ``relic-trace-v1`` release/Inspector path can run
-while the source HCI adapter is still unavailable.
+New source episode integrations must pass source-shaped world events or an
+``ExecutionResult`` to :mod:`relic_agent.source_b3.episodes`; this small ledger
+remains only so the existing public ``relic-trace-v1`` release/Inspector path
+can run while the complete HCI host adapter is unavailable.
 """
 
 from __future__ import annotations

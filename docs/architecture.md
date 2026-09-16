@@ -13,9 +13,14 @@ source B3 proposal + protocol lifecycle (active, narrow)
   -> validate/review/adopt/materialize, then support/use/violation/enforcement
   -> immutable adoption record projected into source-core formation state
 
+source B3 event-to-episode lifecycle (explicit-input only)
+  -> source-ported HCI event ontology + episode manager
+  -> caller supplies a source world event or ExecutionResult and its OrgWorld
+  -> closed source episode may be projected immutably into source-core state
+
 legacy compatibility shell (non-authoritative)
   -> deterministic mock lifecycle used by existing CLI/trace/Inspector smoke
-  -> task/episode/reflection shell; mock wishes do not become source proposals
+  -> task/reflection shell; mock events never become source episodes or proposals
   -> no claim of HCI/B3 execution parity
 ```
 
@@ -33,6 +38,13 @@ source-shaped proposal through the explicit host seam, but the compatibility
 shell cannot generate one from its mock reflection. `governance.review_ticks`
 is fixed to the source value of `3`, and the source protocol distinct-approver
 floor is fixed to `2`; other values fail before execution.
+
+The episode closure is also source-pinned, but it is not an active conversion
+of the compatibility event ledger. Its adapter requires a caller-supplied HCI
+world event or `ExecutionResult` plus the source world. A closed source episode
+can then become one immutable portable record; an open episode is never
+projected. This preserves the source manager's lifecycle without claiming that
+a mock task event reconstructs an HCI episode.
 
 The compatibility shell is retained only to avoid breaking the release-facing
 CLI, `relic-trace-v1`, Inspector, Docker image, and wrappers while the real HCI

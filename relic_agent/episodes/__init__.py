@@ -1,6 +1,16 @@
-"""Event-to-episode organization memory."""
+"""Source-pinned HCI event-to-episode compatibility imports."""
 
-from relic_agent.episodes.manager import EpisodeManager
-from relic_agent.episodes.models import OrgEpisode
+from relic_agent.episodes.manager import (
+    EpisodeManager,
+    SourceB3EpisodeHostUnavailableError,
+    SourceB3EpisodeLifecycleAdapter,
+)
+from relic_agent.episodes.models import EpEvent, OrgEpisode
 
-__all__ = ["EpisodeManager", "OrgEpisode"]
+__all__ = [
+    "EpisodeManager",
+    "EpEvent",
+    "OrgEpisode",
+    "SourceB3EpisodeHostUnavailableError",
+    "SourceB3EpisodeLifecycleAdapter",
+]

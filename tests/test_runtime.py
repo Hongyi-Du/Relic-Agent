@@ -52,6 +52,24 @@ def test_minimal_runtime_does_not_fabricate_a_source_proposal_lifecycle(tmp_path
 
 
 @pytest.mark.integration
+def test_minimal_runtime_does_not_fabricate_source_episode_evidence(tmp_path: Path) -> None:
+    runtime = OrganizationRuntime(load_config(ROOT / "configs" / "minimal.yaml"))
+    result = runtime.run(output_root=tmp_path, run_id="minimal-episode-test")
+
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    episode_status = manifest["source_episode_lifecycle"]
+    assert episode_status["activation"] == "explicit_source_orgworld_input_only"
+    assert episode_status["source_core_projection"] == "unbound_no_source_host_projection"
+    assert episode_status["episode_count"] == 0
+    assert "legacy_compatibility_event_to_episode_translation" in episode_status[
+        "unavailable_fail_closed"
+    ]
+
+    trace = load_trace(result.trace_path)
+    assert all(frame["episodes"] == [] for frame in trace["frames"])
+
+
+@pytest.mark.integration
 def test_runtime_refuses_to_overwrite_a_run_directory(tmp_path: Path) -> None:
     config = load_config(ROOT / "configs" / "minimal.yaml")
     OrganizationRuntime(config).run(output_root=tmp_path, run_id="same-run")

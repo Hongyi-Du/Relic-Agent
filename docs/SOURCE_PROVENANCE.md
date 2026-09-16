@@ -67,10 +67,35 @@ Each `run.json` states:
 - `state_materialization: bootstrap_plus_source_b3_protocol_adoption`;
 - `active_hci_host_adapter: unavailable_fail_closed`.
 
-The manifest also has `source_b3_protocol_lifecycle` and
-`source_proposal_lifecycle`, which name the exact source revision, blobs,
-active scope, projected event counts, and unavailable capabilities. Full source
-OrgWorld action execution, LLM reflection/source proposal generation,
-ProgramBench-only registry repair, growth/policy execution, and the HCI
-human-seat host adapter remain unavailable/fail-closed. No substitute
-implementation is provided for them.
+The manifest also has `source_b3_protocol_lifecycle`,
+`source_proposal_lifecycle`, and `source_episode_lifecycle`, which name the
+exact source revision, blobs, active scope, projected event counts, and
+unavailable capabilities. The default compatibility run leaves the episode
+adapter unbound because it has no HCI world-event host. Full source OrgWorld
+action execution, LLM reflection/source proposal generation, ProgramBench-only
+registry repair, growth/policy execution, and the HCI human-seat host adapter
+remain unavailable/fail-closed. No substitute implementation is provided for
+them.
+
+## Source event-to-episode closure
+
+`relic_agent/source_b3/episodes/episode.py` is byte-exact from the HCI
+revision `dda36fb563375060ae8d8850300db01eb4695d29`; its
+`episode_manager.py` has one recorded import rewrite into the local closed
+package.  The port keeps the HCI trigger, attach, bounded-close, template
+summary, outcome, and debugging-recall semantics intact.
+
+The manager is deliberately not pointed at the release-shell `EventStore`.
+That ledger has compatibility event names and does not constitute a source
+`OrgWorld` event stream.  `SourceB3EpisodeLifecycleAdapter` therefore accepts
+only a caller-supplied HCI-shaped world event or `ExecutionResult`, plus the
+explicit world object.  It cannot construct an OrgWorld or reinterpret a
+mock task event as a source episode.
+
+When a source episode reaches a terminal status, the adapter can project one
+immutable `OrganizationEpisodeState` into the existing organization-core
+formation ledger.  Open episodes are never projected, avoiding a mutable
+episode record behind an append-only boundary.  The compatibility runtime
+leaves this adapter unbound and its public trace contains no episode evidence;
+that is intentional rather than a claim that mock events reproduce HCI
+episodes.

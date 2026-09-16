@@ -4,12 +4,14 @@
 
 Relic Agent is a release-facing shell around a source-first organization-core
 extraction. It is not the paper benchmark or a claim of complete B3/HCI
-reproduction. Source-shaped proposals and the protocol lifecycle are routed
-through pinned HCI closures; the deterministic shell remains for the CLI,
-public trace, Inspector, Docker path, and task flow.
+reproduction. Source-shaped proposals, protocol lifecycle, and explicit-input
+event-to-episode lifecycle are routed through pinned HCI closures; the
+deterministic shell remains for the CLI, public trace, Inspector, Docker path,
+and task flow.
 
 The source proposal-manager slice accepts externally supplied source-shaped
-drafts; it does not invent a draft from the mock runtime's reflection. Full
+drafts; the episode slice likewise requires an explicit source event/result
+and OrgWorld, so it does not turn a mock task event into an episode. Full
 OrgWorld execution, live LLM reflection/proposal generation, growth/policy
 execution, and the HCI host adapter are explicitly unavailable/fail-closed. Do
 not treat a successful run as a paper result. See [source provenance and
@@ -144,13 +146,15 @@ development-machine paths.
 
 `relic-agent` 是一个面向发布的壳层，围绕 source-first 的 organization-core
 抽取构建；它不是论文 benchmark，也不宣称已完整复现 B3/HCI。默认 protocol
-lifecycle 和 source-shaped proposal 都接到固定版本的 HCI closure；deterministic
+lifecycle、source-shaped proposal，以及需要显式 source event/result 和 OrgWorld
+输入的 event-to-episode lifecycle 都接到固定版本的 HCI closure；deterministic
 shell 仍负责 CLI、公开 trace、Inspector、Docker 和 task flow。
 
-source proposal-manager slice 只接受外部提供的 source-shaped draft；不会从 mock
-runtime 的 reflection 自造 proposal。完整 OrgWorld execution、live LLM
-reflection/proposal generation、growth/policy execution 和 HCI host adapter 都是
-explicitly unavailable/fail-closed。成功的 run 不能当作论文结果。详见
+source proposal-manager slice 只接受外部提供的 source-shaped draft；episode slice
+也只接受显式的 source event/result 和 OrgWorld，绝不会把 mock task event 编成
+episode。完整 OrgWorld execution、live LLM reflection/proposal generation、growth/
+policy execution 和 HCI host adapter 都是 explicitly unavailable/fail-closed。成功的
+run 不能当作论文结果。详见
 [source provenance and boundary](docs/SOURCE_PROVENANCE.md)。
 
 当前可直接复制运行：

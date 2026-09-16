@@ -356,7 +356,8 @@ class OrganizationRuntime:
         if task.owner_id != agent.agent_id:
             return
         if not any(
-            task_id in episode.linked_object_ids for episode in self.episodes.episodes.values()
+            event.event_type == "task_started" and task_id in event.object_ids
+            for event in self.events.events
         ):
             self._emit(
                 event_type="task_started",
@@ -533,14 +534,6 @@ class OrganizationRuntime:
             payload=payload,
             visibility=visibility,
         )
-        episode = self.episodes.observe(event)
-        if episode is not None and event.event_type == "protocol_adopted":
-            for object_id in event.object_ids:
-                if (
-                    object_id in self.governance.protocol_registry.protocols
-                    and object_id not in episode.produced_protocols
-                ):
-                    episode.produced_protocols.append(object_id)
         if actor_id in self._recent_events:
             self._recent_events[actor_id].append(event)
             self._recent_events[actor_id] = self._recent_events[actor_id][-12:]
@@ -619,7 +612,19 @@ class OrganizationRuntime:
             "decision_summary": episode.decision_summary,
             "outcome_summary": episode.outcome_summary,
             "produced_protocols": list(episode.produced_protocols),
-            "timeline": [dict(item) for item in episode.timeline],
+            # HCI's source event view calls this field ``family``.  The public
+            # trace contract calls the same normalized category ``event_type``;
+            # this is a shape-only projection of an already source-observed
+            # episode, never a conversion from a legacy compatibility event.
+            "timeline": [
+                {
+                    "tick": item["tick"],
+                    "event_id": item["event_id"],
+                    "event_type": item["family"],
+                    "actor_id": item.get("actor_id") or "",
+                }
+                for item in episode.timeline
+            ],
         }
 
     def _write_public_trace(self, path: Path, run_id: str) -> dict[str, Any]:
@@ -680,6 +685,7 @@ class OrganizationRuntime:
                 "authority": "legacy_compatibility_runtime",
             },
             "source_core": source_core.status().as_dict(),
+            "source_episode_lifecycle": self.episodes.status().as_dict(),
             "source_proposal_lifecycle": self.governance.source_status(),
             "outputs": {
                 "config_snapshot": "config.yaml",
