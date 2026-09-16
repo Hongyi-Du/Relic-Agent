@@ -1,4 +1,4 @@
-"""Public memory surface; private reflection text stays out of public traces."""
+"""Compatibility memory contract; reflection text stays out of public traces."""
 
 from relic_agent.reflection.models import AgentMemory
 

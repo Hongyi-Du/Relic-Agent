@@ -14,12 +14,17 @@ Top-level fields are strict:
 | `agents` | Persistent member ID, display name, role, profile, skills, and tools |
 | `tasks` | Work items, priorities, optional owners, and required skills |
 | `governance` | Source-fixed distinct-approver floor and review latency |
-| `runtime` | Seed, tick count, provider, and reflection interval |
+| `runtime` | Seed, tick count, provider, and a legacy reflection-interval field |
 
 Profile and skill values are bounded to `[0, 1]`. IDs must be unique, and task
 owners must reference declared agents. The current milestone intentionally
 accepts only `provider: mock`; an unknown or unqualified live provider fails
 before execution.
+
+`runtime.reflection_interval` remains accepted for backwards-compatible config
+loading, but is intentionally ignored by the mock release shell. Source
+reflection has the HCI batch cadence and only activates with a terminal source
+episode, mounted HCI `OrgWorld`, and OpenAI-compatible source provider.
 
 `governance.min_approvers` must be `2`, the pinned source proposal manager's
 distinct-approver floor. `governance.review_ticks` must be `3`, the pinned

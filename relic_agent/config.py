@@ -51,6 +51,9 @@ class RuntimeConfig:
     seed: int = 42
     ticks: int = 12
     provider: str = "mock"
+    # Retained to accept prior public configs. The compatibility runtime no
+    # longer invokes reflection from mock events; active source reflection has
+    # its own HCI batch cadence and explicit host gate.
     reflection_interval: int = 3
 
 

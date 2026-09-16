@@ -57,8 +57,9 @@ during config validation rather than silently altering lifecycle semantics.
 This remains deliberately not a claim that Relic Agent is a complete B3 or HCI
 execution extraction. The deterministic compatibility runner still supplies
 the CLI, `relic-trace-v1`, Inspector, wrappers, Docker smoke path, and task
-shell. It does **not** turn a mock reflection/wish into a fixed proposal. A
-successful run is not paper evidence.
+shell. It does **not** turn a mock event, episode, reflection, or wish into a
+source cognitive record or a fixed proposal. A successful run is not paper
+evidence.
 
 Each `run.json` states:
 
@@ -68,14 +69,15 @@ Each `run.json` states:
 - `active_hci_host_adapter: unavailable_fail_closed`.
 
 The manifest also has `source_b3_protocol_lifecycle`,
-`source_proposal_lifecycle`, and `source_episode_lifecycle`, which name the
-exact source revision, blobs, active scope, projected event counts, and
-unavailable capabilities. The default compatibility run leaves the episode
-adapter unbound because it has no HCI world-event host. Full source OrgWorld
-action execution, LLM reflection/source proposal generation, ProgramBench-only
-registry repair, growth/policy execution, and the HCI human-seat host adapter
-remain unavailable/fail-closed. No substitute implementation is provided for
-them.
+`source_proposal_lifecycle`, `source_episode_lifecycle`, and
+`source_reflection_lifecycle`, which name the exact source revision, blobs,
+active scope, projected event counts, and unavailable capabilities. The default
+compatibility run leaves the episode and reflection adapters unbound because it
+has neither an HCI world-event host nor a mounted HCI cognitive host. Full
+source OrgWorld action execution, LLM reflection/source proposal generation,
+ProgramBench-only registry repair, growth/policy execution, and the HCI
+human-seat host adapter remain unavailable/fail-closed. No substitute
+implementation is provided for them.
 
 ## Source event-to-episode closure
 
@@ -99,3 +101,30 @@ episode record behind an append-only boundary.  The compatibility runtime
 leaves this adapter unbound and its public trace contains no episode evidence;
 that is intentional rather than a claim that mock events reproduce HCI
 episodes.
+
+## Source episode-to-reflection/wish closure
+
+`relic_agent/source_b3/reflection/objects.py`, `manager.py`,
+`batch_manager.py`, and `failure_digest.py` come from the same HCI revision;
+their source and shipped blob IDs are recorded in
+`relic_agent/source_b3/reflection/provenance.py`. The former release-shell
+reflection dataclasses now re-export the source objects, and its deterministic
+fixed-story `ReflectionManager` has been removed.
+
+The closure deliberately has no compatibility `reflect(Event)` route. It can
+run only after a caller supplies a terminal episode owned by a real HCI
+`OrgWorld`, explicitly mounts the vendored manager on that world, and provides
+an `openai` or OpenAI-compatible `http` source client exposing `generate_json`.
+No source template fallback is permitted through this boundary; a missing
+world/episode/provider, a `mock` provider, or a native `anthropic` provider
+fails before a reflection or wish is generated.
+
+The HCI `event_appraisal.py`, `episode_summarizer.py`, and
+`wish_interpreter.py` have been audited and are listed with source blobs as
+unported LLM adjuncts. Their prompt-assets/client/world closure is not present
+in Relic Agent, so they are not reimplemented or called against mock state.
+This is an explicit gap, not a replacement implementation.
+
+`relic-trace-v1` and Inspector remain public-only. The compatibility runtime
+reports zero source reflections and wishes, and neither hidden mock cognition
+nor source raw reflection text is emitted into a trace or Inspector response.

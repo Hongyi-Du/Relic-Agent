@@ -18,9 +18,16 @@ source B3 event-to-episode lifecycle (explicit-input only)
   -> caller supplies a source world event or ExecutionResult and its OrgWorld
   -> closed source episode may be projected immutably into source-core state
 
+source B3 episode-to-reflection/wish lifecycle (explicit-input only)
+  -> source-ported reflection objects/manager/batch/failure digest
+  -> caller supplies a terminal source episode, mounted OrgWorld, and
+     OpenAI-compatible provider; no template or native-Anthropic fallback
+  -> private source cognition is never projected into relic-trace-v1
+
 legacy compatibility shell (non-authoritative)
   -> deterministic mock lifecycle used by existing CLI/trace/Inspector smoke
-  -> task/reflection shell; mock events never become source episodes or proposals
+  -> task shell only; mock events never become source episodes, reflections,
+     wishes, or proposals
   -> no claim of HCI/B3 execution parity
 ```
 
@@ -45,6 +52,14 @@ world event or `ExecutionResult` plus the source world. A closed source episode
 can then become one immutable portable record; an open episode is never
 projected. This preserves the source manager's lifecycle without claiming that
 a mock task event reconstructs an HCI episode.
+
+The reflection closure vendors the HCI object, manager, batch-selection, and
+failure-digest modules with recorded blobs. It does not reinterpret the mock
+event ledger and rejects a missing terminal source episode, unmounted HCI
+`OrgWorld`, mock provider, and native Anthropic provider. The source LLM
+adjuncts (event appraisal, episode summarization, and wish interpretation) are
+recorded as unavailable because their prompt/assets and HCI host boundary are
+not closed here. They are not replaced with a local provider implementation.
 
 The compatibility shell is retained only to avoid breaking the release-facing
 CLI, `relic-trace-v1`, Inspector, Docker image, and wrappers while the real HCI

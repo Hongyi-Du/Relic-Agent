@@ -59,3 +59,7 @@ select = ["E4", "E7", "E9", "F"]
 "relic_agent/source_b3/protocols/objects.py" = ["F401"]
 # The source-ported HCI episode manager retains this historical unused import.
 "relic_agent/source_b3/episodes/episode_manager.py" = ["F401"]
+# The source-pinned reflection manager and batch manager retain their source
+# imports verbatim; local lint does not rewrite vendored behavior.
+"relic_agent/source_b3/reflection/manager.py" = ["F401"]
+"relic_agent/source_b3/reflection/batch_manager.py" = ["F401"]

@@ -80,6 +80,12 @@ The loader rejects the trace unless all of the following hold:
 Opaque reflection and wish identifiers may remain on a public proposal to show
 lineage. They do not provide a route to the private reflection content.
 
+The current compatibility runtime does not manufacture either identifier: its
+source reflection lifecycle remains unbound until a terminal HCI episode,
+mounted HCI `OrgWorld`, and OpenAI-compatible source provider are supplied.
+Inspector therefore cannot display a synthetic reflection or wish for a normal
+Relic Agent smoke run.
+
 ## Interaction model
 
 Timeline selection moves to the event-level snapshot. The Object Inspector and

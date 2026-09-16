@@ -72,7 +72,15 @@ def test_inspector_serves_only_allowlisted_routes_with_security_headers(tmp_path
 
         status, headers, body = _request(server, "/api/trace")
         assert status == 200
-        assert json.loads(body)["trace_sha256"] == trace["trace_sha256"]
+        served_trace = json.loads(body)
+        assert served_trace["trace_sha256"] == trace["trace_sha256"]
+        served_event_types = {
+            event["event_type"]
+            for frame in served_trace["frames"]
+            for event in frame["events"]
+        }
+        assert "reflection_completed" not in served_event_types
+        assert "wish_created" not in served_event_types
         assert "base-uri 'none'" in headers["content-security-policy"]
         assert "frame-ancestors 'none'" in headers["content-security-policy"]
         assert headers["cache-control"] == "no-store"

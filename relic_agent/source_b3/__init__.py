@@ -14,6 +14,11 @@ from relic_agent.source_b3.episodes import (
     SourceB3EpisodeLifecycleAdapter,
     source_b3_episode_provenance,
 )
+from relic_agent.source_b3.reflection import (
+    SourceB3ReflectionHostUnavailableError,
+    SourceB3ReflectionLifecycleAdapter,
+    source_b3_reflection_provenance,
+)
 from relic_agent.source_b3.proposals import (
     Proposal,
     ProtocolSpec,
@@ -26,9 +31,12 @@ __all__ = [
     "SourceB3ProtocolLifecycleUnavailableError",
     "SourceB3EpisodeHostUnavailableError",
     "SourceB3EpisodeLifecycleAdapter",
+    "SourceB3ReflectionHostUnavailableError",
+    "SourceB3ReflectionLifecycleAdapter",
     "Proposal",
     "ProtocolSpec",
     "ToolSpec",
     "source_b3_proposal_provenance",
     "source_b3_episode_provenance",
+    "source_b3_reflection_provenance",
 ]

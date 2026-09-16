@@ -33,6 +33,19 @@ def test_minimal_runtime_does_not_fabricate_a_source_proposal_lifecycle(tmp_path
     assert "source_llm_proposal_generation" in manifest["source_proposal_lifecycle"][
         "unavailable_fail_closed"
     ]
+    reflection_status = manifest["source_reflection_lifecycle"]
+    assert reflection_status["activation"] == (
+        "explicit_mounted_hci_orgworld_closed_episode_and_"
+        "openai_compatible_provider_only"
+    )
+    assert reflection_status["source_host_binding"] == "unbound_no_source_orgworld"
+    assert reflection_status["reflection_count"] == 0
+    assert reflection_status["wish_count"] == 0
+    assert "legacy_compatibility_event_to_reflection_translation" in reflection_status[
+        "unavailable_fail_closed"
+    ]
+    assert manifest["summary"]["reflections"] == 0
+    assert manifest["summary"]["wishes"] == 0
 
     trace = load_trace(result.trace_path)
     event_types = {event["event_type"] for frame in trace["frames"] for event in frame["events"]}

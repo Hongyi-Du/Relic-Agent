@@ -24,7 +24,6 @@ from relic_agent.decision import Candidate, DecisionTrace, OrganizationPolicy
 from relic_agent.episodes import EpisodeManager, OrgEpisode
 from relic_agent.events import Event, EventStore
 from relic_agent.governance import GovernanceManager
-from relic_agent.governance.manager import SourceProposalGenerationUnavailableError
 from relic_agent.organization import AgentState, OrganizationState, Task, TaskStatus
 from relic_agent.reflection import ReflectionManager
 from relic_agent.replay.trace import build_trace
@@ -131,7 +130,6 @@ class OrganizationRuntime:
         self._last_frame_decision_index = 0
         self._last_frame_protocol_event_index = 0
         self._source_core_bridge: SourceCoreObservationBridge | None = None
-        self._source_proposal_generation_unavailable = False
 
     def run(
         self,
@@ -437,65 +435,15 @@ class OrganizationRuntime:
         )
 
     def _maybe_reflect_and_propose(self) -> None:
-        if self._source_proposal_generation_unavailable:
-            return
-        if self.governance.proposals:
-            return
-        if self.state.tick % self.config.runtime.reflection_interval != 0:
-            return
-        candidates = [
-            agent
-            for agent in self.state.agents.values()
-            if any(
-                event.event_type == "task_blocked" for event in self._recent_events[agent.agent_id]
-            )
-        ]
-        if not candidates:
-            return
-        agent = sorted(candidates, key=lambda item: item.agent_id)[0]
-        reflection, wish = self.reflection.reflect(
-            tick=self.state.tick,
-            agent=agent,
-            episodes=self.episodes.open_for_agent(agent.agent_id),
-            recent_events=self._recent_events[agent.agent_id],
-        )
-        self._emit(
-            event_type="reflection_completed",
-            actor_id=agent.agent_id,
-            object_ids=(reflection.reflection_id,),
-            payload={"summary": "Private reflection completed."},
-            visibility="private",
-        )
-        self._emit(
-            event_type="wish_created",
-            actor_id=agent.agent_id,
-            object_ids=(wish.wish_id,),
-            payload={"summary": "Private organization need recorded."},
-            visibility="private",
-        )
-        try:
-            proposal = self.governance.propose_from_wish(wish, tick=self.state.tick)
-        except SourceProposalGenerationUnavailableError:
-            # A mock reflection is not the HCI LLM proposal generator.  Keep
-            # the release shell runnable but do not turn its private wish into
-            # a fabricated governance object.
-            self._source_proposal_generation_unavailable = True
-            return
-        self.state.proposals = self.governance.proposals
-        self.state.proposal_object_id_projection = self.governance.public_proposal_object_ids()
-        # Source proposals are descriptive until adoption; the registry mirror
-        # appears only when the source manager materializes its ProtocolSpec.
-        self.state.protocols = self.governance.protocol_registry.protocols
-        for episode_id in proposal.source_episode_ids:
-            episode = self.episodes.episodes.get(episode_id)
-            if episode and proposal.proposal_id not in episode.linked_proposal_ids:
-                episode.linked_proposal_ids.append(proposal.proposal_id)
-        self._emit(
-            event_type="proposal_created",
-            actor_id=agent.agent_id,
-            object_ids=(proposal.proposal_id,),
-            payload={"summary": proposal.summary, "title": proposal.title},
-        )
+        """Keep mock task events out of the source reflection lifecycle.
+
+        Reflection requires a terminal HCI episode, mounted ``OrgWorld``, and
+        OpenAI-compatible provider.  The release-shell event ledger has none
+        of those inputs, so even private heuristic cognition is disabled rather
+        than generated and hidden from ``relic-trace-v1``.
+        """
+
+        return
 
     def _adopt_ready_proposals(self) -> None:
         for proposal in list(self.governance.proposals.values()):
@@ -686,6 +634,7 @@ class OrganizationRuntime:
             },
             "source_core": source_core.status().as_dict(),
             "source_episode_lifecycle": self.episodes.status().as_dict(),
+            "source_reflection_lifecycle": self.reflection.status().as_dict(),
             "source_proposal_lifecycle": self.governance.source_status(),
             "outputs": {
                 "config_snapshot": "config.yaml",
@@ -703,8 +652,8 @@ class OrganizationRuntime:
                 ),
                 "events": len(self.events.events),
                 "episodes": len(self.episodes.episodes),
-                "reflections": len(self.reflection.reflections),
-                "wishes": len(self.reflection.wishes),
+                "reflections": self.reflection.status().reflection_count,
+                "wishes": self.reflection.status().wish_count,
                 "proposals": len(self.governance.proposals),
                 "adopted_protocols": sum(
                     1
