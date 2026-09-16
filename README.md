@@ -4,15 +4,16 @@
 
 Relic Agent is a release-facing shell around a source-first organization-core
 extraction. It is not the paper benchmark or a claim of complete B3/HCI
-reproduction. The default protocol lifecycle is routed through a pinned
-source-backed HCI registry; the deterministic shell remains for the CLI,
-public trace, Inspector, Docker path, task flow, and compatibility proposal
-input.
+reproduction. Source-shaped proposals and the protocol lifecycle are routed
+through pinned HCI closures; the deterministic shell remains for the CLI,
+public trace, Inspector, Docker path, and task flow.
 
-Only the protocol lifecycle is source-active. Full OrgWorld execution, live
-LLM reflection/proposal generation, growth/policy execution, and the HCI host
-adapter are explicitly unavailable/fail-closed. Do not treat a successful run
-as a paper result. See [source provenance and boundary](docs/SOURCE_PROVENANCE.md).
+The source proposal-manager slice accepts externally supplied source-shaped
+drafts; it does not invent a draft from the mock runtime's reflection. Full
+OrgWorld execution, live LLM reflection/proposal generation, growth/policy
+execution, and the HCI host adapter are explicitly unavailable/fail-closed. Do
+not treat a successful run as a paper result. See [source provenance and
+boundary](docs/SOURCE_PROVENANCE.md).
 
 ## Quickstart
 
@@ -29,7 +30,7 @@ uv run relic-agent run-default
 uv run relic-agent replay-example
 ```
 
-Open the bundled no-cost lifecycle in the public organization observatory:
+Open the bundled no-cost boundary sample in the public organization observatory:
 
 ```bash
 uv run relic-agent inspect-example
@@ -56,7 +57,7 @@ docker compose run --rm relic-agent-runtime run-default --output-root /data/runs
 docker compose up relic-inspector
 ```
 
-The smoke and bundled replay make zero provider calls. Runs are written below
+The smoke and bundled boundary replay make zero provider calls. Runs are written below
 `outputs/<run-id>/` unless `--output-root` or `RELIC_AGENT_OUTPUT_ROOT` selects
 another location.
 
@@ -143,11 +144,11 @@ development-machine paths.
 
 `relic-agent` 是一个面向发布的壳层，围绕 source-first 的 organization-core
 抽取构建；它不是论文 benchmark，也不宣称已完整复现 B3/HCI。默认 protocol
-lifecycle 已接到固定版本的 source-backed HCI registry；deterministic shell
-仍负责 CLI、公开 trace、Inspector、Docker、task flow 和 compatibility proposal
-input。
+lifecycle 和 source-shaped proposal 都接到固定版本的 HCI closure；deterministic
+shell 仍负责 CLI、公开 trace、Inspector、Docker 和 task flow。
 
-只有 protocol lifecycle 是 source-active。完整 OrgWorld execution、live LLM
+source proposal-manager slice 只接受外部提供的 source-shaped draft；不会从 mock
+runtime 的 reflection 自造 proposal。完整 OrgWorld execution、live LLM
 reflection/proposal generation、growth/policy execution 和 HCI host adapter 都是
 explicitly unavailable/fail-closed。成功的 run 不能当作论文结果。详见
 [source provenance and boundary](docs/SOURCE_PROVENANCE.md)。
@@ -164,7 +165,7 @@ uv run relic-agent run-default
 uv run relic-agent replay-example
 ```
 
-启动 bundled replay Inspector（无模型费用）：
+启动 bundled boundary replay Inspector（无模型费用）：
 
 ```bash
 uv run relic-agent inspect-example

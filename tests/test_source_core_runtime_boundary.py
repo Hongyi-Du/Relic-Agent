@@ -9,7 +9,7 @@ import pytest
 
 from relic_agent.config import load_config
 from relic_agent.governance import GovernanceManager
-from relic_agent.reflection.models import Wish
+from relic_agent.governance.models import Proposal
 from relic_agent.runtime import OrganizationRuntime
 
 
@@ -36,47 +36,42 @@ def test_default_run_records_source_b3_protocol_lifecycle_status(tmp_path: Path)
     assert source_b3["source_commit"] == "dda36fb563375060ae8d8850300db01eb4695d29"
     assert source_b3["activation"] == "active_source_hci_protocol_registry"
     assert source_b3["source_core_projection"] == "bound_active"
-    assert source_b3["adoption_records_projected"] == 1
-    assert source_b3["source_events_projected"] > 0
+    assert source_b3["adoption_records_projected"] == 0
+    assert source_b3["source_events_projected"] == 0
     assert "source_orgworld_action_execution" in source_b3["unavailable_fail_closed"]
     assert source_core["observed_event_count"] == (
         result.event_count
         + result.ticks
         + 1
-        + source_b3["source_events_projected"]
-        + source_b3["adoption_records_projected"]
     )
     assert len(source_core["bootstrap_state_sha256"]) == 64
 
 
 @pytest.mark.unit
-def test_compatibility_governance_uses_source_core_approval_policy() -> None:
-    manager = GovernanceManager(agent_ids=("a", "b"), min_approvers=2, review_ticks=3)
-    wish = Wish(
-        wish_id="wish-1",
-        agent_id="a",
-        source_reflection_id="reflection-1",
-        source_reflection_ids=["reflection-1"],
-        source_episode_id="episode-1",
-        related_episode_ids=["episode-1"],
-        source_event_ids=["event-1"],
-        wish_type="protocol_need",
-        fingerprint="stable",
-        interpreted_need="review",
-        target_problem="missing review",
-        suggested_improvement="review",
-        missing_support_type="protocol",
-        urgency=0.8,
-        expected_benefit="quality",
-        risk_if_unaddressed="risk",
-        created_at_tick=1,
-        updated_at_tick=1,
+def test_compatibility_governance_exposes_source_proposal_review_status() -> None:
+    manager = GovernanceManager(
+        agent_ids=("a", "b"),
+        agent_roles={"a": "founder", "b": "cofounder"},
+        known_actions=("claim_task",),
+        min_approvers=2,
+        review_ticks=3,
     )
-    proposal = manager.propose_from_wish(wish, tick=1)
+    proposal = manager.submit(
+        Proposal(
+            proposal_id="proposal-1",
+            proposal_type="protocol_proposal",
+            title="Review gate",
+            summary="require a review",
+            proposer_agent_id="a",
+            source_episode_ids=["episode-1", "episode-2"],
+            required_actions=["claim_task"],
+        ),
+        tick=1,
+    )
 
     pending = manager.approval_decision(proposal, tick=3)
     assert pending.ready is False
     assert "review_latency_pending" in pending.reason_codes
-    for agent_id in proposal.approval_required_from:
-        manager.approve(proposal.proposal_id, agent_id, tick=4)
+    manager.approve(proposal.proposal_id, "a", tick=4)
+    manager.approve(proposal.proposal_id, "b", tick=4)
     assert manager.approval_decision(proposal, tick=4).ready is True

@@ -7,7 +7,8 @@ private reflection text.
 
 ## Start a replay
 
-The bundled lifecycle is deterministic and makes no model call:
+The bundled boundary sample is a digest-valid empty public trace and makes no
+model call. It demonstrates the Inspector interface, not an organization run:
 
 ```bash
 uv run relic-agent inspect-example

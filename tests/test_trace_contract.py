@@ -57,39 +57,24 @@ def test_public_trace_is_event_synchronized_and_excludes_policy_audit(tmp_path: 
         frame["events"][0]["event_type"]: frame for frame in trace["frames"] if frame["events"]
     }
     blocked_task = event_frames["task_blocked"]["organization"]["tasks"][0]
-    completed_task = event_frames["task_completed"]["organization"]["tasks"][0]
     assert blocked_task["status"] == "blocked"
-    assert completed_task["status"] == "done"
+    assert "task_completed" not in event_frames
 
 
 @pytest.mark.replay
-def test_public_trace_relations_resolve_across_governance_and_task_state(tmp_path: Path) -> None:
+def test_public_trace_does_not_project_a_fabricated_governance_relation(tmp_path: Path) -> None:
     trace, _ = _run(tmp_path)
     final = trace["frames"][-1]["organization"]
-    proposal = final["proposals"][0]
-    protocol = final["protocols"][0]
     task = final["tasks"][0]
-    governance_ids = {
-        event["event_id"] for frame in trace["frames"] for event in frame["governance_events"]
-    }
 
-    assert proposal["object_created_id"] == protocol["protocol_id"]
-    # The active source registry has no synthetic compatibility-proposal field;
-    # the public adoption event carries the join instead.
-    adoption_events = [
-        event
+    assert final["proposals"] == []
+    assert final["protocols"] == []
+    assert not any(
+        event["event_type"] == "protocol_adopted"
         for frame in trace["frames"]
         for event in frame["events"]
-        if event["event_type"] == "protocol_adopted"
-    ]
-    assert any(
-        {proposal["proposal_id"], protocol["protocol_id"]} <= set(event["object_ids"])
-        for event in adoption_events
     )
-    assert set(protocol["usage_events"]) <= governance_ids
-    assert {row["protocol_id"] for row in task["history"] if row.get("protocol_id")} == {
-        protocol["protocol_id"]
-    }
+    assert not any(row.get("protocol_id") for row in task["history"])
 
 
 @pytest.mark.replay

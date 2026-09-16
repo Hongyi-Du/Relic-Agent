@@ -10,6 +10,7 @@ import yaml
 
 from relic_agent.core.hashing import canonical_sha256
 from relic_agent.source_b3.protocols import REVIEW_MIN_TICKS
+from relic_agent.source_b3.proposals.manager import MIN_DISTINCT_PROTOCOL_APPROVERS
 
 CONFIG_SCHEMA_VERSION = "relic-agent-config-v1"
 SUPPORTED_PROVIDERS = ("mock",)
@@ -200,6 +201,11 @@ def load_config(path: str | Path) -> OrganizationConfig:
         raise ConfigError("governance.min_approvers must be a positive integer")
     if min_approvers > len(agents):
         raise ConfigError("governance.min_approvers cannot exceed the agent count")
+    if min_approvers != MIN_DISTINCT_PROTOCOL_APPROVERS:
+        raise ConfigError(
+            "governance.min_approvers must equal the active source proposal "
+            f"distinct-approver floor ({MIN_DISTINCT_PROTOCOL_APPROVERS})"
+        )
     if not isinstance(review_ticks, int) or isinstance(review_ticks, bool) or review_ticks < 1:
         raise ConfigError("governance.review_ticks must be a positive integer")
     if review_ticks != REVIEW_MIN_TICKS:

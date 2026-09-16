@@ -24,6 +24,7 @@ from relic_agent.decision import Candidate, DecisionTrace, OrganizationPolicy
 from relic_agent.episodes import EpisodeManager, OrgEpisode
 from relic_agent.events import Event, EventStore
 from relic_agent.governance import GovernanceManager
+from relic_agent.governance.manager import SourceProposalGenerationUnavailableError
 from relic_agent.organization import AgentState, OrganizationState, Task, TaskStatus
 from relic_agent.reflection import ReflectionManager
 from relic_agent.replay.trace import build_trace
@@ -103,6 +104,18 @@ class OrganizationRuntime:
             agent_ids=tuple(sorted(self.state.agents)),
             min_approvers=config.governance.min_approvers,
             review_ticks=config.governance.review_ticks,
+            agent_roles={agent_id: agent.role for agent_id, agent in self.state.agents.items()},
+            known_actions=(
+                "approve_proposal",
+                "claim_task",
+                "work_task",
+                "use_protocol",
+            ),
+        )
+        self.governance.bind_host_context(
+            agents=self.state.agents,
+            reflection_manager=self.reflection,
+            episode_manager=self.episodes,
         )
         self.policy = OrganizationPolicy(profile_conditioning=True)
         self.decision_traces: list[DecisionTrace] = []
@@ -118,6 +131,7 @@ class OrganizationRuntime:
         self._last_frame_decision_index = 0
         self._last_frame_protocol_event_index = 0
         self._source_core_bridge: SourceCoreObservationBridge | None = None
+        self._source_proposal_generation_unavailable = False
 
     def run(
         self,
@@ -422,6 +436,8 @@ class OrganizationRuntime:
         )
 
     def _maybe_reflect_and_propose(self) -> None:
+        if self._source_proposal_generation_unavailable:
+            return
         if self.governance.proposals:
             return
         if self.state.tick % self.config.runtime.reflection_interval != 0:
@@ -456,11 +472,18 @@ class OrganizationRuntime:
             payload={"summary": "Private organization need recorded."},
             visibility="private",
         )
-        proposal = self.governance.propose_from_wish(wish, tick=self.state.tick)
+        try:
+            proposal = self.governance.propose_from_wish(wish, tick=self.state.tick)
+        except SourceProposalGenerationUnavailableError:
+            # A mock reflection is not the HCI LLM proposal generator.  Keep
+            # the release shell runnable but do not turn its private wish into
+            # a fabricated governance object.
+            self._source_proposal_generation_unavailable = True
+            return
         self.state.proposals = self.governance.proposals
-        # The source registry creates a proposed protocol immediately.  Publish
-        # that real lifecycle object before its source ledger event reaches the
-        # public trace; it becomes adopted only after the source latency gate.
+        self.state.proposal_object_id_projection = self.governance.public_proposal_object_ids()
+        # Source proposals are descriptive until adoption; the registry mirror
+        # appears only when the source manager materializes its ProtocolSpec.
         self.state.protocols = self.governance.protocol_registry.protocols
         for episode_id in proposal.source_episode_ids:
             episode = self.episodes.episodes.get(episode_id)
@@ -479,6 +502,7 @@ class OrganizationRuntime:
                 continue
             protocol_id = self.governance.adopt(proposal.proposal_id, tick=self.state.tick)
             self.state.protocols = self.governance.protocol_registry.protocols
+            self.state.proposal_object_id_projection = self.governance.public_proposal_object_ids()
             self._emit(
                 event_type="protocol_adopted",
                 actor_id=proposal.approved_by[0] if proposal.approved_by else "",
@@ -656,6 +680,7 @@ class OrganizationRuntime:
                 "authority": "legacy_compatibility_runtime",
             },
             "source_core": source_core.status().as_dict(),
+            "source_proposal_lifecycle": self.governance.source_status(),
             "outputs": {
                 "config_snapshot": "config.yaml",
                 "status": "status.json",

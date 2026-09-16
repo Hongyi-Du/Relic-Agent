@@ -12,12 +12,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.integration
-def test_minimal_runtime_closes_the_capability_lifecycle(tmp_path: Path) -> None:
+def test_minimal_runtime_does_not_fabricate_a_source_proposal_lifecycle(tmp_path: Path) -> None:
     runtime = OrganizationRuntime(load_config(ROOT / "configs" / "minimal.yaml"))
     result = runtime.run(output_root=tmp_path, run_id="minimal-test")
 
-    assert result.completed_task_count == 1
-    assert result.adopted_protocol_count == 1
+    assert result.completed_task_count == 0
+    assert result.adopted_protocol_count == 0
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert manifest["runtime"]["provider_calls_made"] == 0
     assert (result.run_directory / "config.yaml").read_text(encoding="utf-8") == (
@@ -27,29 +27,23 @@ def test_minimal_runtime_closes_the_capability_lifecycle(tmp_path: Path) -> None
         json.loads((result.run_directory / "status.json").read_text(encoding="utf-8"))["status"]
         == "completed"
     )
-    assert manifest["summary"] == {
-        "adopted_protocols": 1,
-        "agents": 2,
-        "completed_tasks": 1,
-        "episodes": 2,
-        "events": result.event_count,
-        "proposals": 1,
-        "reflections": 1,
-        "tasks": 1,
-        "wishes": 1,
-    }
+    assert manifest["summary"]["adopted_protocols"] == 0
+    assert manifest["summary"]["completed_tasks"] == 0
+    assert manifest["summary"]["proposals"] == 0
+    assert "source_llm_proposal_generation" in manifest["source_proposal_lifecycle"][
+        "unavailable_fail_closed"
+    ]
 
     trace = load_trace(result.trace_path)
     event_types = {event["event_type"] for frame in trace["frames"] for event in frame["events"]}
-    assert {
-        "task_started",
-        "task_blocked",
+    assert {"task_started", "task_blocked"} <= event_types
+    assert not {
         "proposal_created",
         "proposal_approved",
         "protocol_adopted",
         "protocol_used",
         "task_completed",
-    } <= event_types
+    }.intersection(event_types)
     assert "reflection_completed" not in event_types
     assert "wish_created" not in event_types
     serialized = json.dumps(trace, sort_keys=True)

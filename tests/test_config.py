@@ -58,3 +58,13 @@ def test_config_rejects_non_source_protocol_review_latency(tmp_path: Path) -> No
 
     with pytest.raises(ConfigError, match="active source protocol lifecycle"):
         load_config(path)
+
+
+@pytest.mark.unit
+def test_config_rejects_non_source_distinct_approver_floor(tmp_path: Path) -> None:
+    original = (ROOT / "configs" / "minimal.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "non-source-approver-floor.yaml"
+    path.write_text(original.replace("min_approvers: 2", "min_approvers: 1"), encoding="utf-8")
+
+    with pytest.raises(ConfigError, match="active source proposal"):
+        load_config(path)

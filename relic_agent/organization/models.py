@@ -49,6 +49,7 @@ class OrganizationState:
     tasks: dict[str, Task] = field(default_factory=dict)
     proposals: dict[str, Any] = field(default_factory=dict)
     protocols: dict[str, Any] = field(default_factory=dict)
+    proposal_object_id_projection: dict[str, str] = field(default_factory=dict)
 
     def public_dict(self) -> dict[str, Any]:
         return {
@@ -57,7 +58,7 @@ class OrganizationState:
             "tick": self.tick,
             "agents": [self.agents[key].public_dict() for key in sorted(self.agents)],
             "tasks": [self._task_dict(self.tasks[key]) for key in sorted(self.tasks)],
-            "proposals": [self.proposals[key].to_dict() for key in sorted(self.proposals)],
+            "proposals": [self._proposal_dict(self.proposals[key]) for key in sorted(self.proposals)],
             "protocols": [self._protocol_dict(self.protocols[key]) for key in sorted(self.protocols)],
         }
 
@@ -66,6 +67,21 @@ class OrganizationState:
         payload = asdict(task)
         status = task.status
         payload["status"] = status.value if isinstance(status, TaskStatus) else str(status)
+        return payload
+
+    def _proposal_dict(self, proposal: Any) -> dict[str, Any]:
+        """Project a source ProtocolSpec link onto the public registry object.
+
+        The in-memory source proposal retains its authoritative
+        ``protospec_N`` id.  ``relic-trace-v1`` exposes the already-public
+        HCI registry objects instead, so the release projection is explicit
+        and does not mutate the source lifecycle record.
+        """
+
+        payload = proposal.to_dict()
+        projected = self.proposal_object_id_projection.get(proposal.proposal_id)
+        if projected:
+            payload["object_created_id"] = projected
         return payload
 
     @staticmethod

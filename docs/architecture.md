@@ -8,14 +8,14 @@ source-core contracts/state/host seam (canonical)
   -> append-only source event evidence and portable bootstrap state
   -> active HCI host adapter: unavailable, fail closed
 
-source B3 protocol lifecycle (active, narrow)
-  -> source-ported HCI protocol objects + registry
-  -> proposal/support/adoption/use/violation/enforcement lifecycle
+source B3 proposal + protocol lifecycle (active, narrow)
+  -> source-ported HCI proposal objects/manager/dedup + protocol registry
+  -> validate/review/adopt/materialize, then support/use/violation/enforcement
   -> immutable adoption record projected into source-core formation state
 
 legacy compatibility shell (non-authoritative)
   -> deterministic mock lifecycle used by existing CLI/trace/Inspector smoke
-  -> compatibility proposal input and task/episode/reflection shell
+  -> task/episode/reflection shell; mock wishes do not become source proposals
   -> no claim of HCI/B3 execution parity
 ```
 
@@ -25,12 +25,14 @@ typed gates, routing, and synthesis request/result schemas. Its provenance and
 byte-exact conformance checks are described in
 [source provenance](SOURCE_PROVENANCE.md).
 
-The source B3 registry is a minimal closed port: its two source files and its
-deterministic fingerprint dependency are pinned by provenance and conformance
-tests. It does not emulate an OrgWorld. Its incoming protocol proposal is a
-clearly labeled compatibility-shell input, while all lifecycle transitions
-after that boundary remain source-owned. `governance.review_ticks` is fixed to
-the source value of `3`; a custom value fails before execution.
+The source B3 closure includes the proposal object's manager, family classifier,
+and deterministic semantic deduplication as well as the registry and its
+fingerprint dependency. Upstream blobs and behavior are pinned by provenance
+and conformance tests. It does not emulate an OrgWorld: a caller may submit a
+source-shaped proposal through the explicit host seam, but the compatibility
+shell cannot generate one from its mock reflection. `governance.review_ticks`
+is fixed to the source value of `3`, and the source protocol distinct-approver
+floor is fixed to `2`; other values fail before execution.
 
 The compatibility shell is retained only to avoid breaking the release-facing
 CLI, `relic-trace-v1`, Inspector, Docker image, and wrappers while the real HCI
