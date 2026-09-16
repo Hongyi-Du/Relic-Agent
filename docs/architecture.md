@@ -1,16 +1,21 @@
 # Runtime architecture
 
-Relic Agent currently has two deliberately separated layers.
+Relic Agent currently has three deliberately separated layers.
 
 ```text
 source-core contracts/state/host seam (canonical)
   -> byte-exact organization_core from 041ddee1aa109a9b65dfdad7bdb8e258ad0a293e
-  -> append-only shadow observation and portable bootstrap state
+  -> append-only source event evidence and portable bootstrap state
   -> active HCI host adapter: unavailable, fail closed
+
+source B3 protocol lifecycle (active, narrow)
+  -> source-ported HCI protocol objects + registry
+  -> proposal/support/adoption/use/violation/enforcement lifecycle
+  -> immutable adoption record projected into source-core formation state
 
 legacy compatibility shell (non-authoritative)
   -> deterministic mock lifecycle used by existing CLI/trace/Inspector smoke
-  -> emitted events validated through the source-core shadow seam
+  -> compatibility proposal input and task/episode/reflection shell
   -> no claim of HCI/B3 execution parity
 ```
 
@@ -20,12 +25,19 @@ typed gates, routing, and synthesis request/result schemas. Its provenance and
 byte-exact conformance checks are described in
 [source provenance](SOURCE_PROVENANCE.md).
 
+The source B3 registry is a minimal closed port: its two source files and its
+deterministic fingerprint dependency are pinned by provenance and conformance
+tests. It does not emulate an OrgWorld. Its incoming protocol proposal is a
+clearly labeled compatibility-shell input, while all lifecycle transitions
+after that boundary remain source-owned. `governance.review_ticks` is fixed to
+the source value of `3`; a custom value fails before execution.
+
 The compatibility shell is retained only to avoid breaking the release-facing
 CLI, `relic-trace-v1`, Inspector, Docker image, and wrappers while the real HCI
-host adapter is ported. It does not materialize source episode/reflection/
-proposal/protocol/growth/policy/execution behavior. Its run manifest makes that
-boundary explicit and a request for active HCI execution fails instead of
-silently using the mock implementation.
+host adapter is ported. It does not materialize source episode/reflection/LLM
+proposal generation/growth/policy/action execution behavior. Its run manifest
+makes that boundary explicit and a request for active HCI execution fails
+instead of silently using the mock implementation.
 
 `relic-trace-v1` remains the only Inspector input. Each public event is paired
 with a post-event organization snapshot; private compatibility events are not

@@ -4,14 +4,15 @@
 
 Relic Agent is a release-facing shell around a source-first organization-core
 extraction. It is not the paper benchmark or a claim of complete B3/HCI
-reproduction. The canonical portable contracts/state/host seam is vendored
-from the audited source revision; the deterministic mock lifecycle remains only
-to keep the CLI, public trace, Inspector, Docker path, and wrappers runnable.
+reproduction. The default protocol lifecycle is routed through a pinned
+source-backed HCI registry; the deterministic shell remains for the CLI,
+public trace, Inspector, Docker path, task flow, and compatibility proposal
+input.
 
-The mock lifecycle is explicitly non-authoritative. It is observed through the
-source-core event contract, and every `run.json` says that active HCI execution
-is unavailable/fail-closed. Do not treat a successful mock run as a paper
-result. See [source provenance and boundary](docs/SOURCE_PROVENANCE.md).
+Only the protocol lifecycle is source-active. Full OrgWorld execution, live
+LLM reflection/proposal generation, growth/policy execution, and the HCI host
+adapter are explicitly unavailable/fail-closed. Do not treat a successful run
+as a paper result. See [source provenance and boundary](docs/SOURCE_PROVENANCE.md).
 
 ## Quickstart
 
@@ -93,9 +94,10 @@ uv run relic-agent replay \
 ```
 
 Copy `configs/minimal.yaml` and change the members, display names, roles,
-profiles, skills, tools, tasks, governance thresholds, seed, or runtime length.
-The loader is fail-closed: unknown fields, duplicate IDs, invalid owners,
-out-of-range scores, and unsupported providers are rejected before a run starts.
+profiles, skills, tools, tasks, approval threshold, seed, or runtime length.
+The source protocol review latency is fixed at `3`. The loader is fail-closed:
+unknown fields, duplicate IDs, invalid owners, out-of-range scores, unsupported
+providers, and a non-source review latency are rejected before a run starts.
 
 See [installation](docs/installation.md),
 [configuration](docs/configuration.md), [Docker](docs/docker.md),
@@ -140,13 +142,14 @@ development-machine paths.
 > **运行你自己的 Relic organization。**
 
 `relic-agent` 是一个面向发布的壳层，围绕 source-first 的 organization-core
-抽取构建；它不是论文 benchmark，也不宣称已完整复现 B3/HCI。权威的通用
-contracts/state/host seam 来自经审计的源代码；现有 deterministic mock lifecycle
-仅用于保持 CLI、公开 trace、Inspector、Docker 和 wrappers 可运行。
+抽取构建；它不是论文 benchmark，也不宣称已完整复现 B3/HCI。默认 protocol
+lifecycle 已接到固定版本的 source-backed HCI registry；deterministic shell
+仍负责 CLI、公开 trace、Inspector、Docker、task flow 和 compatibility proposal
+input。
 
-mock lifecycle 被明确标记为非权威：其事件会经过 source-core contract 校验，
-每个 `run.json` 都会声明 active HCI execution 为 unavailable/fail-closed。成功的
-mock run 不能当作论文结果。详见
+只有 protocol lifecycle 是 source-active。完整 OrgWorld execution、live LLM
+reflection/proposal generation、growth/policy execution 和 HCI host adapter 都是
+explicitly unavailable/fail-closed。成功的 run 不能当作论文结果。详见
 [source provenance and boundary](docs/SOURCE_PROVENANCE.md)。
 
 当前可直接复制运行：

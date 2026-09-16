@@ -13,13 +13,18 @@ Top-level fields are strict:
 | `organization` | Stable organization ID and display name |
 | `agents` | Persistent member ID, display name, role, profile, skills, and tools |
 | `tasks` | Work items, priorities, optional owners, and required skills |
-| `governance` | Distinct approval threshold and review latency |
+| `governance` | Distinct approval threshold and source-fixed review latency |
 | `runtime` | Seed, tick count, provider, and reflection interval |
 
 Profile and skill values are bounded to `[0, 1]`. IDs must be unique, and task
 owners must reference declared agents. The current milestone intentionally
 accepts only `provider: mock`; an unknown or unqualified live provider fails
 before execution.
+
+`governance.min_approvers` is passed to the active source protocol registry.
+`governance.review_ticks` must be `3`, the pinned source lifecycle latency.
+Another value is rejected during config loading rather than producing a
+nearby-but-different protocol lifecycle.
 
 ## Configuration precedence
 

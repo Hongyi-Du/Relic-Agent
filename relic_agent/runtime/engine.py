@@ -139,6 +139,7 @@ class OrganizationRuntime:
             self.config,
             run_id=actual_run_id,
         )
+        self.governance.bind_source_core_bridge(self._source_core_bridge)
         config_snapshot_path = output_directory / "config.yaml"
         self._atomic_text(
             config_snapshot_path,
@@ -457,6 +458,10 @@ class OrganizationRuntime:
         )
         proposal = self.governance.propose_from_wish(wish, tick=self.state.tick)
         self.state.proposals = self.governance.proposals
+        # The source registry creates a proposed protocol immediately.  Publish
+        # that real lifecycle object before its source ledger event reaches the
+        # public trace; it becomes adopted only after the source latency gate.
+        self.state.protocols = self.governance.protocol_registry.protocols
         for episode_id in proposal.source_episode_ids:
             episode = self.episodes.episodes.get(episode_id)
             if episode and proposal.proposal_id not in episode.linked_proposal_ids:
@@ -508,7 +513,7 @@ class OrganizationRuntime:
         if episode is not None and event.event_type == "protocol_adopted":
             for object_id in event.object_ids:
                 if (
-                    object_id.startswith("protocol_")
+                    object_id in self.governance.protocol_registry.protocols
                     and object_id not in episode.produced_protocols
                 ):
                     episode.produced_protocols.append(object_id)

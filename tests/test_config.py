@@ -48,3 +48,13 @@ def test_config_rejects_unknown_provider(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigError, match="not enabled"):
         load_config(path)
+
+
+@pytest.mark.unit
+def test_config_rejects_non_source_protocol_review_latency(tmp_path: Path) -> None:
+    original = (ROOT / "configs" / "minimal.yaml").read_text(encoding="utf-8")
+    path = tmp_path / "non-source-review-latency.yaml"
+    path.write_text(original.replace("review_ticks: 3", "review_ticks: 4"), encoding="utf-8")
+
+    with pytest.raises(ConfigError, match="active source protocol lifecycle"):
+        load_config(path)

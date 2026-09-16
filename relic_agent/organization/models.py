@@ -58,7 +58,7 @@ class OrganizationState:
             "agents": [self.agents[key].public_dict() for key in sorted(self.agents)],
             "tasks": [self._task_dict(self.tasks[key]) for key in sorted(self.tasks)],
             "proposals": [self.proposals[key].to_dict() for key in sorted(self.proposals)],
-            "protocols": [asdict(self.protocols[key]) for key in sorted(self.protocols)],
+            "protocols": [self._protocol_dict(self.protocols[key]) for key in sorted(self.protocols)],
         }
 
     @staticmethod
@@ -66,4 +66,18 @@ class OrganizationState:
         payload = asdict(task)
         status = task.status
         payload["status"] = status.value if isinstance(status, TaskStatus) else str(status)
+        return payload
+
+    @staticmethod
+    def _protocol_dict(protocol: Any) -> dict[str, Any]:
+        """Project only public protocol fields into ``relic-trace-v1``.
+
+        The source HCI registry can retain independent evaluator attestations.
+        Those records are not part of the public trace contract and may carry
+        private evidence references, so they stay in the source lifecycle
+        ledger rather than being silently reshaped for Inspector output.
+        """
+
+        payload = asdict(protocol)
+        payload.pop("independent_outcome_oracles", None)
         return payload

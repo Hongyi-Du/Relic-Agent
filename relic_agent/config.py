@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from relic_agent.core.hashing import canonical_sha256
+from relic_agent.source_b3.protocols import REVIEW_MIN_TICKS
 
 CONFIG_SCHEMA_VERSION = "relic-agent-config-v1"
 SUPPORTED_PROVIDERS = ("mock",)
@@ -201,6 +202,11 @@ def load_config(path: str | Path) -> OrganizationConfig:
         raise ConfigError("governance.min_approvers cannot exceed the agent count")
     if not isinstance(review_ticks, int) or isinstance(review_ticks, bool) or review_ticks < 1:
         raise ConfigError("governance.review_ticks must be a positive integer")
+    if review_ticks != REVIEW_MIN_TICKS:
+        raise ConfigError(
+            "governance.review_ticks must equal the active source protocol "
+            f"lifecycle latency ({REVIEW_MIN_TICKS})"
+        )
 
     raw_runtime = _mapping(root.get("runtime", {}), "runtime")
     _only_keys(raw_runtime, {"seed", "ticks", "provider", "reflection_interval"}, "runtime")

@@ -1,8 +1,8 @@
-"""Compatibility governance with source-core approval checks.
+"""Compatibility proposal shell with source-backed protocol lifecycle.
 
-The surrounding proposal/protocol objects are temporary compatibility data,
-not a replacement for the HCI implementation. The approval quorum, named
-approver, and review-latency decision is delegated to the vendored source core.
+The input proposal objects remain a temporary release-shell boundary.  Once a
+proposal is ready, its protocol lifecycle is executed by the source-ported HCI
+registry rather than the former bespoke registry.
 """
 
 from __future__ import annotations
@@ -10,8 +10,9 @@ from __future__ import annotations
 from organization_core import ApprovalCheckDecision, ApprovalCheckRequest, ApprovalPolicy
 
 from relic_agent.governance.models import Proposal
-from relic_agent.protocols.registry import ProtocolRegistry
 from relic_agent.reflection.models import Wish
+from relic_agent.source_b3.protocol_lifecycle import SourceB3ProtocolLifecycleAdapter
+from relic_agent.source_core import SourceCoreObservationBridge
 
 
 class GovernanceError(ValueError):
@@ -30,12 +31,18 @@ class GovernanceManager:
         self.min_approvers = min_approvers
         self.review_ticks = review_ticks
         self.proposals: dict[str, Proposal] = {}
-        self.protocol_registry = ProtocolRegistry(
+        self.protocol_registry = SourceB3ProtocolLifecycleAdapter(
             min_supporters=min_approvers,
             review_ticks=review_ticks,
         )
+        self._source_protocol_id_by_proposal: dict[str, str] = {}
         self._approval_policy = ApprovalPolicy()
         self._sequence = 0
+
+    def bind_source_core_bridge(self, bridge: SourceCoreObservationBridge) -> None:
+        """Attach the active source lifecycle to the existing host boundary."""
+
+        self.protocol_registry.bind_source_core_bridge(bridge)
 
     def propose_from_wish(self, wish: Wish, *, tick: int) -> Proposal:
         if wish.status not in {"open", "interpreted"}:
@@ -77,6 +84,17 @@ class GovernanceManager:
             updated_at_tick=tick,
         )
         self.proposals[proposal_id] = proposal
+        source_protocol_id = f"proto_{proposal.family}"
+        self.protocol_registry.propose(
+            proposer_id=proposal.proposer_agent_id or "",
+            protocol_type=proposal.family,
+            rule_summary=proposal.summary,
+            scope="organization",
+            target_process="task_lifecycle",
+            tick=tick,
+            protocol_id=source_protocol_id,
+        )
+        self._source_protocol_id_by_proposal[proposal_id] = source_protocol_id
         wish.status = "converted_to_proposal"
         wish.generated_proposal_ids.append(proposal_id)
         wish.updated_at_tick = tick
@@ -90,14 +108,22 @@ class GovernanceManager:
             raise GovernanceError("agent_not_designated_approver")
         if agent_id not in proposal.approved_by:
             proposal.approved_by.append(agent_id)
+            source_protocol_id = self._source_protocol_id_by_proposal[proposal_id]
+            self.protocol_registry.support(agent_id, source_protocol_id, tick=tick)
         proposal.updated_at_tick = tick
         return proposal
 
     def ready(self, proposal: Proposal, *, tick: int) -> bool:
-        return proposal.status == "under_review" and self.approval_decision(
-            proposal,
-            tick=tick,
-        ).ready
+        source_protocol_id = self._source_protocol_id_by_proposal.get(proposal.proposal_id)
+        if source_protocol_id is None:
+            return False
+        self.protocol_registry.tick_adoptions(tick=tick)
+        source_protocol = self.protocol_registry.protocols[source_protocol_id]
+        return (
+            proposal.status == "under_review"
+            and self.approval_decision(proposal, tick=tick).ready
+            and source_protocol.adoption_status == "adopted"
+        )
 
     def approval_decision(
         self,
@@ -123,21 +149,8 @@ class GovernanceManager:
         proposal = self.proposals[proposal_id]
         if not self.ready(proposal, tick=tick):
             raise GovernanceError("proposal_not_ready")
-        protocol_id = f"protocol_{proposal.family}"
-        protocol = self.protocol_registry.propose(
-            proposer_id=proposal.proposer_agent_id or "",
-            protocol_type=proposal.family,
-            rule_summary=proposal.summary,
-            scope="organization",
-            target_process="task_lifecycle",
-            tick=proposal.created_at_tick,
-            protocol_id=protocol_id,
-            created_from_proposal_id=proposal.proposal_id,
-        )
-        for approver in proposal.approved_by:
-            if protocol.adoption_status == "proposed":
-                self.protocol_registry.support(approver, protocol_id, tick=tick)
-        self.protocol_registry.tick_adoptions(tick)
+        protocol_id = self._source_protocol_id_by_proposal[proposal_id]
+        protocol = self.protocol_registry.protocols[protocol_id]
         if protocol.adoption_status != "adopted":
             raise GovernanceError("protocol_registry_refused_adoption")
         proposal.status = "adopted"

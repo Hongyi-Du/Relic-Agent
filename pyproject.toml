@@ -55,3 +55,5 @@ select = ["E4", "E7", "E9", "F"]
 [tool.ruff.lint.per-file-ignores]
 # The vendored source is blob-verified; retain its historical unused import.
 "organization_core/evidence.py" = ["F401"]
+# The source-exact HCI protocol object keeps this historical unused import.
+"relic_agent/source_b3/protocols/objects.py" = ["F401"]

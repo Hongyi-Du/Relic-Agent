@@ -74,7 +74,18 @@ def test_public_trace_relations_resolve_across_governance_and_task_state(tmp_pat
     }
 
     assert proposal["object_created_id"] == protocol["protocol_id"]
-    assert protocol["created_from_proposal_id"] == proposal["proposal_id"]
+    # The active source registry has no synthetic compatibility-proposal field;
+    # the public adoption event carries the join instead.
+    adoption_events = [
+        event
+        for frame in trace["frames"]
+        for event in frame["events"]
+        if event["event_type"] == "protocol_adopted"
+    ]
+    assert any(
+        {proposal["proposal_id"], protocol["protocol_id"]} <= set(event["object_ids"])
+        for event in adoption_events
+    )
     assert set(protocol["usage_events"]) <= governance_ids
     assert {row["protocol_id"] for row in task["history"] if row.get("protocol_id")} == {
         protocol["protocol_id"]

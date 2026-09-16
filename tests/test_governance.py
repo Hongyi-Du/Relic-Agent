@@ -28,7 +28,10 @@ def test_wish_cannot_skip_explicit_governance_or_review_latency() -> None:
 
     assert wish.status == "converted_to_proposal"
     assert proposal.source_wish_id == wish.wish_id
-    assert manager.protocol_registry.protocols == {}
+    assert set(manager.protocol_registry.protocols) == {"proto_task_ownership_review"}
+    source_protocol = manager.protocol_registry.protocols["proto_task_ownership_review"]
+    assert source_protocol.adoption_status == "proposed"
+    assert source_protocol.proposal_event_id == "pev_1"
     with pytest.raises(GovernanceError, match="not_ready"):
         manager.adopt(proposal.proposal_id, tick=5)
 
