@@ -3,6 +3,7 @@ import os
 import shutil
 import stat
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ BASH_COMMANDS = {
     "run_default.sh": "run-default",
     "run_minimal.sh": "run-minimal",
     "replay_example.sh": "replay-example",
+    "start_inspector.sh": "inspect",
 }
 
 POWERSHELL_COMMANDS = {
@@ -27,6 +29,7 @@ POWERSHELL_COMMANDS = {
     "run_default.ps1": "run_default.sh",
     "run_minimal.ps1": "run_minimal.sh",
     "replay_example.ps1": "replay_example.sh",
+    "start_inspector.ps1": "start_inspector.sh",
 }
 
 
@@ -96,6 +99,7 @@ def test_docker_and_compose_call_the_canonical_cli() -> None:
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
     compose = yaml.safe_load((ROOT / "docker-compose.yml").read_text(encoding="utf-8"))
     service = compose["services"]["relic-agent-runtime"]
+    inspector = compose["services"]["relic-inspector"]
 
     assert 'ENTRYPOINT ["relic-agent"]' in dockerfile
     assert 'CMD ["run-default", "--output-root", "/data/runs"]' in dockerfile
@@ -103,3 +107,24 @@ def test_docker_and_compose_call_the_canonical_cli() -> None:
     assert service["user"] == "${RELIC_AGENT_UID:-1000}:${RELIC_AGENT_GID:-1000}"
     assert service["read_only"] is True
     assert "./outputs:/data/runs" in service["volumes"]
+    assert inspector["command"] == [
+        "inspect-example",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8765",
+        "--allow-remote",
+    ]
+    assert inspector["ports"] == ["127.0.0.1:${RELIC_AGENT_INSPECTOR_PORT:-8765}:8765"]
+    assert inspector["read_only"] is True
+    assert "./outputs:/data/runs:ro" in inspector["volumes"]
+
+
+@pytest.mark.release
+def test_wheel_configuration_includes_every_inspector_asset() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    included = project["tool"]["hatch"]["build"]["targets"]["wheel"]["force-include"]
+
+    for name in ("index.html", "app.css", "app.js"):
+        path = f"relic_agent/inspector/static/{name}"
+        assert included[path] == path

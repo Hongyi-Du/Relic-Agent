@@ -12,3 +12,25 @@ services:
     volumes:
       - ./outputs:/data/runs
     command: ["run-default", "--output-root", "/data/runs"]
+
+  relic-inspector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: relic-agent:local
+    init: true
+    user: "${RELIC_AGENT_UID:-1000}:${RELIC_AGENT_GID:-1000}"
+    read_only: true
+    tmpfs:
+      - /tmp
+    ports:
+      - "127.0.0.1:${RELIC_AGENT_INSPECTOR_PORT:-8765}:8765"
+    volumes:
+      - ./outputs:/data/runs:ro
+    command:
+      - inspect-example
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8765"
+      - --allow-remote

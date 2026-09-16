@@ -25,5 +25,6 @@ RUN uv sync --frozen --no-dev --no-editable \
 USER relic
 
 VOLUME ["/data/runs"]
+EXPOSE 8765
 ENTRYPOINT ["relic-agent"]
 CMD ["run-default", "--output-root", "/data/runs"]

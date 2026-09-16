@@ -29,6 +29,9 @@ packages = ["relic_agent"]
 "configs/default.yaml" = "relic_agent/bundled_configs/default.yaml"
 "configs/minimal.yaml" = "relic_agent/bundled_configs/minimal.yaml"
 "examples/replay/trace.json" = "relic_agent/bundled_replay/trace.json"
+"relic_agent/inspector/static/index.html" = "relic_agent/inspector/static/index.html"
+"relic_agent/inspector/static/app.css" = "relic_agent/inspector/static/app.css"
+"relic_agent/inspector/static/app.js" = "relic_agent/inspector/static/app.js"
 
 [tool.pytest.ini_options]
 addopts = "-ra"

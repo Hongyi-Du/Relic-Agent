@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -17,13 +18,37 @@ BANNED_IDENTITIES = (
 
 @pytest.mark.release
 def test_public_runtime_has_no_paper_or_legacy_identity_leaks() -> None:
+    completed = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    candidates = [ROOT / line for line in completed.stdout.splitlines() if line]
+    text_suffixes = {
+        ".css",
+        ".example",
+        ".html",
+        ".js",
+        ".json",
+        ".lock",
+        ".md",
+        ".ps1",
+        ".py",
+        ".sh",
+        ".toml",
+        ".yaml",
+        ".yml",
+    }
+    text_names = {"Dockerfile", ".dockerignore", ".gitattributes"}
     text = "\n".join(
         path.read_text(encoding="utf-8", errors="ignore")
-        for path in sorted(ROOT.rglob("*"))
+        for path in sorted(candidates)
         if path.is_file()
-        and ".git" not in path.parts
         and "tests" not in path.parts
-        and path.suffix in {".py", ".md", ".yaml", ".yml", ".json"}
+        and path.name not in {"LICENSE", "COMMERCIAL_LICENSE.md"}
+        and (path.suffix in text_suffixes or path.name in text_names)
     ).lower()
 
     for banned in BANNED_IDENTITIES:

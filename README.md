@@ -9,10 +9,9 @@ profile-conditioned decisions, events, episodes, reflection, proposals,
 governance, protocol lifecycles, and auditable replay.
 
 This repository is currently in its first P1 extraction milestone. The
-deterministic mock runtime, default/minimal organizations, public trace contract,
-replay CLI, Docker path, and Linux/WSL/PowerShell thin wrappers are implemented.
-Live model providers and the public Inspector remain release work and are not
-claimed here.
+deterministic mock runtime, default/minimal organizations, fail-closed public
+trace contract, replay/live Inspector, Docker path, and Linux/WSL/PowerShell
+thin wrappers are implemented. Live model-provider adapters remain later work.
 
 ## Quickstart
 
@@ -29,6 +28,20 @@ uv run relic-agent run-default
 uv run relic-agent replay-example
 ```
 
+Open the bundled no-cost lifecycle in the public organization observatory:
+
+```bash
+uv run relic-agent inspect-example
+```
+
+Then open <http://127.0.0.1:8765>. To inspect a new run:
+
+```bash
+uv run relic-agent inspect \
+  --trace outputs/<run-id>/trace.json \
+  --mode replay
+```
+
 Equivalent Bash wrappers are available under `scripts/bash/`.
 
 Docker quickstart:
@@ -39,6 +52,7 @@ docker compose build relic-agent-runtime
 docker compose run --rm relic-agent-runtime check-env
 docker compose run --rm relic-agent-runtime smoke --output-root /data/runs
 docker compose run --rm relic-agent-runtime run-default --output-root /data/runs
+docker compose up relic-inspector
 ```
 
 The smoke and bundled replay make zero provider calls. Runs are written below
@@ -55,6 +69,11 @@ Each run directory contains:
 Private reflections, private memories, and provider messages are excluded from
 the public trace. A public proposal can keep opaque lineage identifiers without
 publishing the private reflection text that motivated it.
+
+The Inspector synchronizes its Timeline, organization snapshot, Object
+Inspector, and State Diff at event-level frames. Optional artifact, repository,
+PR/CI, and evaluation panels say when records were not published rather than
+treating missing data as zero. See [Inspector](docs/inspector.md).
 
 ## Run, replay, customize
 
@@ -79,8 +98,8 @@ The loader is fail-closed: unknown fields, duplicate IDs, invalid owners,
 out-of-range scores, and unsupported providers are rejected before a run starts.
 
 See [installation](docs/installation.md),
-[configuration](docs/configuration.md), and
-[Docker](docs/docker.md), and [architecture](docs/architecture.md) for the
+[configuration](docs/configuration.md), [Docker](docs/docker.md),
+[Inspector](docs/inspector.md), and [architecture](docs/architecture.md) for the
 current supported surface.
 
 ## Platform support
@@ -114,8 +133,20 @@ uv run relic-agent run-default
 uv run relic-agent replay-example
 ```
 
-Windows 用户的正式路径是 **Windows → WSL2 → Linux runtime**。当前尚未完成
-新版 Inspector 和 live model provider，因此本阶段不承诺这两项。Docker、Bash
-wrapper 已实机验证；PowerShell wrapper 已通过 PowerShell 7.6.6 语法和转发契约
-测试，但 Windows 宿主到 WSL 的端到端流程仍要在发布前做一次人工 fresh-clone
-验收。
+启动 bundled replay Inspector（无模型费用）：
+
+```bash
+uv run relic-agent inspect-example
+```
+
+然后在 Windows 或 Linux 浏览器打开 <http://127.0.0.1:8765>。查看用户新 run：
+
+```bash
+uv run relic-agent inspect --trace outputs/<run-id>/trace.json --mode replay
+```
+
+Windows 用户的正式路径是 **Windows → WSL2 → Linux runtime**。新版 Inspector
+已经支持 bundled replay、用户 trace 和逐 tick 原子更新的 live trace；live model
+provider adapter 尚未实现。Docker、Bash wrapper 已实机验证；PowerShell wrapper
+已通过 PowerShell 7.6.6 语法和转发契约测试，但 Windows 宿主到 WSL 的端到端
+fresh-clone 流程仍需在发布前人工验收。

@@ -32,3 +32,12 @@ For the currently exposed output location:
 Organization semantics come from the explicit YAML snapshot. Shell, future
 PowerShell, and Docker entrypoints must call the same Python CLI and must not
 carry their own hidden defaults.
+
+Inspector configuration follows the same explicit-boundary rule:
+
+1. CLI `--host`, `--port`, and `--mode`;
+2. the CLI defaults `127.0.0.1`, `8765`, and `replay`.
+
+`RELIC_AGENT_INSPECTOR_PORT` configures only the host-side Compose port mapping;
+it does not silently override a native CLI argument. Remote binding requires
+the separate `--allow-remote` acknowledgement.
