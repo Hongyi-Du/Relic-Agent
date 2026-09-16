@@ -1,0 +1,3137 @@
+{
+  "config_sha256": "bc05d372e6c1773a7d055c8075923eb1247f68314310b4b7ab468af609e700ed",
+  "frames": [
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "work_task",
+              "features": {
+                "attention_cost": 0.15,
+                "failure_risk_from_low_skill": 0.09999999999999998,
+                "progress_gain": 0.9,
+                "skill_match": 0.9,
+                "task_priority": 1.0
+              },
+              "object_id": "task_demo",
+              "selected": true,
+              "utility": 1.08
+            }
+          ],
+          "chosen_action_id": "work_task",
+          "chosen_object_id": "task_demo",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 1
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [],
+          "chosen_action_id": null,
+          "chosen_object_id": null,
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 1
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": null,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002"
+          ],
+          "linked_protocol_ids": [],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": null,
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "open",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000001",
+          "event_type": "task_started",
+          "object_ids": [
+            "task_demo"
+          ],
+          "payload": {
+            "summary": "Builder started Complete the demo deliverable.",
+            "title": "Complete the demo deliverable"
+          },
+          "tick": 1,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "builder",
+          "event_id": "event_000002",
+          "event_type": "task_progressed",
+          "object_ids": [
+            "task_demo"
+          ],
+          "payload": {
+            "progress": 0.5,
+            "summary": "Complete the demo deliverable reached 50% progress."
+          },
+          "tick": 1,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [
+              "task_demo"
+            ],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [],
+        "protocols": [],
+        "tasks": [
+          {
+            "actual_effort": 1.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 0.5,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "in_progress",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 1
+      },
+      "tick": 1
+    },
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "work_task",
+              "features": {
+                "attention_cost": 0.15,
+                "failure_risk_from_low_skill": 0.09999999999999998,
+                "progress_gain": 0.9,
+                "skill_match": 0.9,
+                "task_priority": 1.0
+              },
+              "object_id": "task_demo",
+              "selected": true,
+              "utility": 1.08
+            }
+          ],
+          "chosen_action_id": "work_task",
+          "chosen_object_id": "task_demo",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 2
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [],
+          "chosen_action_id": null,
+          "chosen_object_id": null,
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 2
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": null,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002",
+            "event_000003"
+          ],
+          "linked_protocol_ids": [],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": null,
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "open",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000003",
+              "event_type": "task_blocked",
+              "tick": 2
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000003",
+          "event_type": "task_blocked",
+          "object_ids": [
+            "task_demo"
+          ],
+          "payload": {
+            "summary": "Complete the demo deliverable needs an accountable peer-review rule."
+          },
+          "tick": 2,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [
+              "task_demo"
+            ],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [],
+        "protocols": [],
+        "tasks": [
+          {
+            "actual_effort": 1.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 2
+              }
+            ],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 0.75,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "blocked",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 2
+      },
+      "tick": 2
+    },
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "work_task",
+              "features": {
+                "attention_cost": 0.15,
+                "failure_risk_from_low_skill": 0.09999999999999998,
+                "progress_gain": 0.9,
+                "skill_match": 0.9,
+                "task_priority": 1.0
+              },
+              "object_id": "task_demo",
+              "selected": true,
+              "utility": 1.08
+            }
+          ],
+          "chosen_action_id": "work_task",
+          "chosen_object_id": "task_demo",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 3
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [],
+          "chosen_action_id": null,
+          "chosen_object_id": null,
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 3
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": null,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002",
+            "event_000003",
+            "event_000004"
+          ],
+          "linked_protocol_ids": [],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": null,
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "open",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000003",
+              "event_type": "task_blocked",
+              "tick": 2
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000004",
+              "event_type": "task_blocked",
+              "tick": 3
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        },
+        {
+          "decision_summary": null,
+          "end_tick": null,
+          "episode_id": "episode_00002",
+          "episode_type": "protocol_formation_episode",
+          "linked_event_ids": [
+            "event_000007"
+          ],
+          "linked_protocol_ids": [],
+          "linked_task_ids": [],
+          "outcome_summary": null,
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Record task ownership before work and peer review before completion.",
+          "produced_protocols": [],
+          "start_tick": 3,
+          "status": "open",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000007",
+              "event_type": "proposal_created",
+              "tick": 3
+            }
+          ],
+          "title": "Task ownership and peer review"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000004",
+          "event_type": "task_blocked",
+          "object_ids": [
+            "task_demo"
+          ],
+          "payload": {
+            "summary": "Complete the demo deliverable needs an accountable peer-review rule."
+          },
+          "tick": 3,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "builder",
+          "event_id": "event_000007",
+          "event_type": "proposal_created",
+          "object_ids": [
+            "proposal_00001"
+          ],
+          "payload": {
+            "summary": "Record task ownership before work and peer review before completion.",
+            "title": "Task ownership and peer review"
+          },
+          "tick": 3,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [
+              "task_demo"
+            ],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [
+          {
+            "adopted_tick": null,
+            "adoption_score": 0.9,
+            "affected_agents": [
+              "builder",
+              "reviewer"
+            ],
+            "affected_objects": [
+              "task_demo"
+            ],
+            "affected_protocols": [],
+            "approval_required_from": [
+              "builder",
+              "reviewer"
+            ],
+            "approved_by": [],
+            "created_at_tick": 3,
+            "expected_benefits": [
+              "clear ownership and auditable review"
+            ],
+            "expected_costs": [],
+            "failure_modes": [],
+            "family": "task_ownership_review",
+            "feasibility_score": 0.9,
+            "impact": {},
+            "object_created_id": null,
+            "proposal_id": "proposal_00001",
+            "proposal_type": "protocol_proposal",
+            "proposed_solution": "record ownership before work and peer review before completion",
+            "proposer_agent_id": "builder",
+            "rejected_by": [],
+            "rejection_reason": "",
+            "required_actions": [
+              "claim_task",
+              "review_task"
+            ],
+            "required_artifacts": [],
+            "required_capabilities": [],
+            "required_participants": [],
+            "risk_score": 0.1,
+            "risks": [
+              "unreviewed work may be treated as complete"
+            ],
+            "source_episode_id": "episode_00001",
+            "source_episode_ids": [
+              "episode_00001"
+            ],
+            "source_event_ids": [
+              "event_000001",
+              "event_000002",
+              "event_000003",
+              "event_000004"
+            ],
+            "source_reflection_id": "reflection_00001",
+            "source_wish_id": "wish_00001",
+            "source_wish_ids": [
+              "wish_00001"
+            ],
+            "status": "under_review",
+            "suggested_revision": "",
+            "summary": "Record task ownership before work and peer review before completion.",
+            "supporters": [],
+            "target_problem": "Complete the demo deliverable needs an accountable peer-review rule.",
+            "title": "Task ownership and peer review",
+            "updated_at_tick": 3,
+            "usefulness_score": 0.9
+          }
+        ],
+        "protocols": [],
+        "tasks": [
+          {
+            "actual_effort": 1.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 2
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 3
+              }
+            ],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 0.75,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "blocked",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 3
+      },
+      "tick": 3
+    },
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "approve_proposal",
+              "features": {
+                "institutional_memory_gain": 0.8,
+                "proposal_endorsement": 0.9,
+                "proposal_skepticism": 0.1
+              },
+              "object_id": "proposal_00001",
+              "selected": true,
+              "utility": 0.772
+            }
+          ],
+          "chosen_action_id": "approve_proposal",
+          "chosen_object_id": "proposal_00001",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 4
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [
+            {
+              "action_id": "approve_proposal",
+              "features": {
+                "institutional_memory_gain": 0.8,
+                "proposal_endorsement": 0.9,
+                "proposal_skepticism": 0.1
+              },
+              "object_id": "proposal_00001",
+              "selected": true,
+              "utility": 1.249
+            }
+          ],
+          "chosen_action_id": "approve_proposal",
+          "chosen_object_id": "proposal_00001",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 4
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": null,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002",
+            "event_000003",
+            "event_000004"
+          ],
+          "linked_protocol_ids": [],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": null,
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "open",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000003",
+              "event_type": "task_blocked",
+              "tick": 2
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000004",
+              "event_type": "task_blocked",
+              "tick": 3
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        },
+        {
+          "decision_summary": null,
+          "end_tick": null,
+          "episode_id": "episode_00002",
+          "episode_type": "protocol_formation_episode",
+          "linked_event_ids": [
+            "event_000007",
+            "event_000008",
+            "event_000009"
+          ],
+          "linked_protocol_ids": [],
+          "linked_task_ids": [],
+          "outcome_summary": null,
+          "participants": [
+            "builder",
+            "reviewer"
+          ],
+          "problem_statement": "Record task ownership before work and peer review before completion.",
+          "produced_protocols": [],
+          "start_tick": 3,
+          "status": "open",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000007",
+              "event_type": "proposal_created",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000008",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "reviewer",
+              "event_id": "event_000009",
+              "event_type": "proposal_approved",
+              "tick": 4
+            }
+          ],
+          "title": "Task ownership and peer review"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000008",
+          "event_type": "proposal_approved",
+          "object_ids": [
+            "proposal_00001"
+          ],
+          "payload": {
+            "summary": "Builder approved Task ownership and peer review."
+          },
+          "tick": 4,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "reviewer",
+          "event_id": "event_000009",
+          "event_type": "proposal_approved",
+          "object_ids": [
+            "proposal_00001"
+          ],
+          "payload": {
+            "summary": "Reviewer approved Task ownership and peer review."
+          },
+          "tick": 4,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [
+              "task_demo"
+            ],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [
+          {
+            "adopted_tick": null,
+            "adoption_score": 0.9,
+            "affected_agents": [
+              "builder",
+              "reviewer"
+            ],
+            "affected_objects": [
+              "task_demo"
+            ],
+            "affected_protocols": [],
+            "approval_required_from": [
+              "builder",
+              "reviewer"
+            ],
+            "approved_by": [
+              "builder",
+              "reviewer"
+            ],
+            "created_at_tick": 3,
+            "expected_benefits": [
+              "clear ownership and auditable review"
+            ],
+            "expected_costs": [],
+            "failure_modes": [],
+            "family": "task_ownership_review",
+            "feasibility_score": 0.9,
+            "impact": {},
+            "object_created_id": null,
+            "proposal_id": "proposal_00001",
+            "proposal_type": "protocol_proposal",
+            "proposed_solution": "record ownership before work and peer review before completion",
+            "proposer_agent_id": "builder",
+            "rejected_by": [],
+            "rejection_reason": "",
+            "required_actions": [
+              "claim_task",
+              "review_task"
+            ],
+            "required_artifacts": [],
+            "required_capabilities": [],
+            "required_participants": [],
+            "risk_score": 0.1,
+            "risks": [
+              "unreviewed work may be treated as complete"
+            ],
+            "source_episode_id": "episode_00001",
+            "source_episode_ids": [
+              "episode_00001"
+            ],
+            "source_event_ids": [
+              "event_000001",
+              "event_000002",
+              "event_000003",
+              "event_000004"
+            ],
+            "source_reflection_id": "reflection_00001",
+            "source_wish_id": "wish_00001",
+            "source_wish_ids": [
+              "wish_00001"
+            ],
+            "status": "under_review",
+            "suggested_revision": "",
+            "summary": "Record task ownership before work and peer review before completion.",
+            "supporters": [],
+            "target_problem": "Complete the demo deliverable needs an accountable peer-review rule.",
+            "title": "Task ownership and peer review",
+            "updated_at_tick": 4,
+            "usefulness_score": 0.9
+          }
+        ],
+        "protocols": [],
+        "tasks": [
+          {
+            "actual_effort": 1.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 2
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 3
+              }
+            ],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 0.75,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "blocked",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 4
+      },
+      "tick": 4
+    },
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "work_task",
+              "features": {
+                "attention_cost": 0.15,
+                "failure_risk_from_low_skill": 0.09999999999999998,
+                "progress_gain": 0.9,
+                "skill_match": 0.9,
+                "task_priority": 1.0
+              },
+              "object_id": "task_demo",
+              "selected": true,
+              "utility": 1.08
+            }
+          ],
+          "chosen_action_id": "work_task",
+          "chosen_object_id": "task_demo",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 5
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [],
+          "chosen_action_id": null,
+          "chosen_object_id": null,
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 5
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": null,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002",
+            "event_000003",
+            "event_000004",
+            "event_000010"
+          ],
+          "linked_protocol_ids": [],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": null,
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "open",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000003",
+              "event_type": "task_blocked",
+              "tick": 2
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000004",
+              "event_type": "task_blocked",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000010",
+              "event_type": "task_blocked",
+              "tick": 5
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        },
+        {
+          "decision_summary": null,
+          "end_tick": null,
+          "episode_id": "episode_00002",
+          "episode_type": "protocol_formation_episode",
+          "linked_event_ids": [
+            "event_000007",
+            "event_000008",
+            "event_000009"
+          ],
+          "linked_protocol_ids": [],
+          "linked_task_ids": [],
+          "outcome_summary": null,
+          "participants": [
+            "builder",
+            "reviewer"
+          ],
+          "problem_statement": "Record task ownership before work and peer review before completion.",
+          "produced_protocols": [],
+          "start_tick": 3,
+          "status": "open",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000007",
+              "event_type": "proposal_created",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000008",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "reviewer",
+              "event_id": "event_000009",
+              "event_type": "proposal_approved",
+              "tick": 4
+            }
+          ],
+          "title": "Task ownership and peer review"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000010",
+          "event_type": "task_blocked",
+          "object_ids": [
+            "task_demo"
+          ],
+          "payload": {
+            "summary": "Complete the demo deliverable needs an accountable peer-review rule."
+          },
+          "tick": 5,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [
+              "task_demo"
+            ],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [
+          {
+            "adopted_tick": null,
+            "adoption_score": 0.9,
+            "affected_agents": [
+              "builder",
+              "reviewer"
+            ],
+            "affected_objects": [
+              "task_demo"
+            ],
+            "affected_protocols": [],
+            "approval_required_from": [
+              "builder",
+              "reviewer"
+            ],
+            "approved_by": [
+              "builder",
+              "reviewer"
+            ],
+            "created_at_tick": 3,
+            "expected_benefits": [
+              "clear ownership and auditable review"
+            ],
+            "expected_costs": [],
+            "failure_modes": [],
+            "family": "task_ownership_review",
+            "feasibility_score": 0.9,
+            "impact": {},
+            "object_created_id": null,
+            "proposal_id": "proposal_00001",
+            "proposal_type": "protocol_proposal",
+            "proposed_solution": "record ownership before work and peer review before completion",
+            "proposer_agent_id": "builder",
+            "rejected_by": [],
+            "rejection_reason": "",
+            "required_actions": [
+              "claim_task",
+              "review_task"
+            ],
+            "required_artifacts": [],
+            "required_capabilities": [],
+            "required_participants": [],
+            "risk_score": 0.1,
+            "risks": [
+              "unreviewed work may be treated as complete"
+            ],
+            "source_episode_id": "episode_00001",
+            "source_episode_ids": [
+              "episode_00001"
+            ],
+            "source_event_ids": [
+              "event_000001",
+              "event_000002",
+              "event_000003",
+              "event_000004"
+            ],
+            "source_reflection_id": "reflection_00001",
+            "source_wish_id": "wish_00001",
+            "source_wish_ids": [
+              "wish_00001"
+            ],
+            "status": "under_review",
+            "suggested_revision": "",
+            "summary": "Record task ownership before work and peer review before completion.",
+            "supporters": [],
+            "target_problem": "Complete the demo deliverable needs an accountable peer-review rule.",
+            "title": "Task ownership and peer review",
+            "updated_at_tick": 4,
+            "usefulness_score": 0.9
+          }
+        ],
+        "protocols": [],
+        "tasks": [
+          {
+            "actual_effort": 1.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 2
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 3
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 5
+              }
+            ],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 0.75,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "blocked",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 5
+      },
+      "tick": 5
+    },
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "work_task",
+              "features": {
+                "attention_cost": 0.15,
+                "failure_risk_from_low_skill": 0.09999999999999998,
+                "progress_gain": 0.9,
+                "skill_match": 0.9,
+                "task_priority": 1.0
+              },
+              "object_id": "task_demo",
+              "selected": true,
+              "utility": 1.08
+            }
+          ],
+          "chosen_action_id": "work_task",
+          "chosen_object_id": "task_demo",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 6
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [],
+          "chosen_action_id": null,
+          "chosen_object_id": null,
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 6
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": null,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002",
+            "event_000003",
+            "event_000004",
+            "event_000010",
+            "event_000011"
+          ],
+          "linked_protocol_ids": [],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": null,
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "open",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000003",
+              "event_type": "task_blocked",
+              "tick": 2
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000004",
+              "event_type": "task_blocked",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000010",
+              "event_type": "task_blocked",
+              "tick": 5
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000011",
+              "event_type": "task_blocked",
+              "tick": 6
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        },
+        {
+          "decision_summary": null,
+          "end_tick": 6,
+          "episode_id": "episode_00002",
+          "episode_type": "protocol_formation_episode",
+          "linked_event_ids": [
+            "event_000007",
+            "event_000008",
+            "event_000009",
+            "event_000012"
+          ],
+          "linked_protocol_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "linked_task_ids": [],
+          "outcome_summary": "The organization adopted Task ownership and peer review.",
+          "participants": [
+            "builder",
+            "reviewer"
+          ],
+          "problem_statement": "Record task ownership before work and peer review before completion.",
+          "produced_protocols": [
+            "protocol_task_ownership_review"
+          ],
+          "start_tick": 3,
+          "status": "resolved",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000007",
+              "event_type": "proposal_created",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000008",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "reviewer",
+              "event_id": "event_000009",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000012",
+              "event_type": "protocol_adopted",
+              "tick": 6
+            }
+          ],
+          "title": "Task ownership and peer review"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000011",
+          "event_type": "task_blocked",
+          "object_ids": [
+            "task_demo"
+          ],
+          "payload": {
+            "summary": "Complete the demo deliverable needs an accountable peer-review rule."
+          },
+          "tick": 6,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "builder",
+          "event_id": "event_000012",
+          "event_type": "protocol_adopted",
+          "object_ids": [
+            "protocol_task_ownership_review",
+            "proposal_00001"
+          ],
+          "payload": {
+            "summary": "The organization adopted Task ownership and peer review."
+          },
+          "tick": 6,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [
+              "task_demo"
+            ],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [
+          {
+            "adopted_tick": 6,
+            "adoption_score": 0.9,
+            "affected_agents": [
+              "builder",
+              "reviewer"
+            ],
+            "affected_objects": [
+              "task_demo"
+            ],
+            "affected_protocols": [],
+            "approval_required_from": [
+              "builder",
+              "reviewer"
+            ],
+            "approved_by": [
+              "builder",
+              "reviewer"
+            ],
+            "created_at_tick": 3,
+            "expected_benefits": [
+              "clear ownership and auditable review"
+            ],
+            "expected_costs": [],
+            "failure_modes": [],
+            "family": "task_ownership_review",
+            "feasibility_score": 0.9,
+            "impact": {},
+            "object_created_id": "protocol_task_ownership_review",
+            "proposal_id": "proposal_00001",
+            "proposal_type": "protocol_proposal",
+            "proposed_solution": "record ownership before work and peer review before completion",
+            "proposer_agent_id": "builder",
+            "rejected_by": [],
+            "rejection_reason": "",
+            "required_actions": [
+              "claim_task",
+              "review_task"
+            ],
+            "required_artifacts": [],
+            "required_capabilities": [],
+            "required_participants": [],
+            "risk_score": 0.1,
+            "risks": [
+              "unreviewed work may be treated as complete"
+            ],
+            "source_episode_id": "episode_00001",
+            "source_episode_ids": [
+              "episode_00001"
+            ],
+            "source_event_ids": [
+              "event_000001",
+              "event_000002",
+              "event_000003",
+              "event_000004"
+            ],
+            "source_reflection_id": "reflection_00001",
+            "source_wish_id": "wish_00001",
+            "source_wish_ids": [
+              "wish_00001"
+            ],
+            "status": "adopted",
+            "suggested_revision": "",
+            "summary": "Record task ownership before work and peer review before completion.",
+            "supporters": [],
+            "target_problem": "Complete the demo deliverable needs an accountable peer-review rule.",
+            "title": "Task ownership and peer review",
+            "updated_at_tick": 6,
+            "usefulness_score": 0.9
+          }
+        ],
+        "protocols": [
+          {
+            "adoption_status": "adopted",
+            "emergence_level": "none",
+            "enforcement_events": [],
+            "first_tick": 3,
+            "impact_metrics": {},
+            "last_active_tick": 6,
+            "opposers": [],
+            "persistence_ticks": 3,
+            "proposal_event_id": "protocol_event_000001",
+            "proposer_id": "builder",
+            "protocol_id": "protocol_task_ownership_review",
+            "protocol_type": "task_ownership_review",
+            "revisions": [],
+            "rule_summary": "Record task ownership before work and peer review before completion.",
+            "scope": "organization",
+            "status": "active",
+            "supporters": [
+              "builder",
+              "reviewer"
+            ],
+            "target_process": "task_lifecycle",
+            "usage_events": [],
+            "violation_events": []
+          }
+        ],
+        "tasks": [
+          {
+            "actual_effort": 1.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 2
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 3
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 5
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 6
+              }
+            ],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 0.75,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "blocked",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 6
+      },
+      "tick": 6
+    },
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "work_task",
+              "features": {
+                "attention_cost": 0.15,
+                "failure_risk_from_low_skill": 0.09999999999999998,
+                "progress_gain": 0.9,
+                "skill_match": 0.9,
+                "task_priority": 1.0
+              },
+              "object_id": "task_demo",
+              "selected": true,
+              "utility": 1.08
+            }
+          ],
+          "chosen_action_id": "work_task",
+          "chosen_object_id": "task_demo",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 7
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [
+            {
+              "action_id": "use_protocol",
+              "features": {
+                "coordination_gain": 0.3,
+                "institutional_memory_gain": 0.5,
+                "protocol_use_potential": 0.8
+              },
+              "object_id": "protocol_task_ownership_review",
+              "selected": true,
+              "utility": 0.966
+            }
+          ],
+          "chosen_action_id": "use_protocol",
+          "chosen_object_id": "protocol_task_ownership_review",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 7
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": 7,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002",
+            "event_000003",
+            "event_000004",
+            "event_000010",
+            "event_000011",
+            "event_000013",
+            "event_000014",
+            "event_000015"
+          ],
+          "linked_protocol_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": "Complete the demo deliverable completed with peer-review governance.",
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "resolved",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000003",
+              "event_type": "task_blocked",
+              "tick": 2
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000004",
+              "event_type": "task_blocked",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000010",
+              "event_type": "task_blocked",
+              "tick": 5
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000011",
+              "event_type": "task_blocked",
+              "tick": 6
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000013",
+              "event_type": "task_progressed",
+              "tick": 7
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000014",
+              "event_type": "protocol_used",
+              "tick": 7
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000015",
+              "event_type": "task_completed",
+              "tick": 7
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        },
+        {
+          "decision_summary": null,
+          "end_tick": 6,
+          "episode_id": "episode_00002",
+          "episode_type": "protocol_formation_episode",
+          "linked_event_ids": [
+            "event_000007",
+            "event_000008",
+            "event_000009",
+            "event_000012"
+          ],
+          "linked_protocol_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "linked_task_ids": [],
+          "outcome_summary": "The organization adopted Task ownership and peer review.",
+          "participants": [
+            "builder",
+            "reviewer"
+          ],
+          "problem_statement": "Record task ownership before work and peer review before completion.",
+          "produced_protocols": [
+            "protocol_task_ownership_review"
+          ],
+          "start_tick": 3,
+          "status": "resolved",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000007",
+              "event_type": "proposal_created",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000008",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "reviewer",
+              "event_id": "event_000009",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000012",
+              "event_type": "protocol_adopted",
+              "tick": 6
+            }
+          ],
+          "title": "Task ownership and peer review"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000013",
+          "event_type": "task_progressed",
+          "object_ids": [
+            "task_demo"
+          ],
+          "payload": {
+            "progress": 1.0,
+            "summary": "Complete the demo deliverable reached 100% progress."
+          },
+          "tick": 7,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "builder",
+          "event_id": "event_000014",
+          "event_type": "protocol_used",
+          "object_ids": [
+            "protocol_task_ownership_review",
+            "task_demo"
+          ],
+          "payload": {
+            "summary": "The adopted protocol governed completion of Complete the demo deliverable."
+          },
+          "tick": 7,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "builder",
+          "event_id": "event_000015",
+          "event_type": "task_completed",
+          "object_ids": [
+            "task_demo",
+            "protocol_task_ownership_review"
+          ],
+          "payload": {
+            "summary": "Complete the demo deliverable completed with peer-review governance."
+          },
+          "tick": 7,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "reviewer",
+          "event_id": "event_000016",
+          "event_type": "protocol_used",
+          "object_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "payload": {
+            "summary": "Reviewer used an adopted organization protocol."
+          },
+          "tick": 7,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [
+          {
+            "adopted_tick": 6,
+            "adoption_score": 0.9,
+            "affected_agents": [
+              "builder",
+              "reviewer"
+            ],
+            "affected_objects": [
+              "task_demo"
+            ],
+            "affected_protocols": [],
+            "approval_required_from": [
+              "builder",
+              "reviewer"
+            ],
+            "approved_by": [
+              "builder",
+              "reviewer"
+            ],
+            "created_at_tick": 3,
+            "expected_benefits": [
+              "clear ownership and auditable review"
+            ],
+            "expected_costs": [],
+            "failure_modes": [],
+            "family": "task_ownership_review",
+            "feasibility_score": 0.9,
+            "impact": {},
+            "object_created_id": "protocol_task_ownership_review",
+            "proposal_id": "proposal_00001",
+            "proposal_type": "protocol_proposal",
+            "proposed_solution": "record ownership before work and peer review before completion",
+            "proposer_agent_id": "builder",
+            "rejected_by": [],
+            "rejection_reason": "",
+            "required_actions": [
+              "claim_task",
+              "review_task"
+            ],
+            "required_artifacts": [],
+            "required_capabilities": [],
+            "required_participants": [],
+            "risk_score": 0.1,
+            "risks": [
+              "unreviewed work may be treated as complete"
+            ],
+            "source_episode_id": "episode_00001",
+            "source_episode_ids": [
+              "episode_00001"
+            ],
+            "source_event_ids": [
+              "event_000001",
+              "event_000002",
+              "event_000003",
+              "event_000004"
+            ],
+            "source_reflection_id": "reflection_00001",
+            "source_wish_id": "wish_00001",
+            "source_wish_ids": [
+              "wish_00001"
+            ],
+            "status": "adopted",
+            "suggested_revision": "",
+            "summary": "Record task ownership before work and peer review before completion.",
+            "supporters": [],
+            "target_problem": "Complete the demo deliverable needs an accountable peer-review rule.",
+            "title": "Task ownership and peer review",
+            "updated_at_tick": 6,
+            "usefulness_score": 0.9
+          }
+        ],
+        "protocols": [
+          {
+            "adoption_status": "adopted",
+            "emergence_level": "none",
+            "enforcement_events": [],
+            "first_tick": 3,
+            "impact_metrics": {},
+            "last_active_tick": 7,
+            "opposers": [],
+            "persistence_ticks": 4,
+            "proposal_event_id": "protocol_event_000001",
+            "proposer_id": "builder",
+            "protocol_id": "protocol_task_ownership_review",
+            "protocol_type": "task_ownership_review",
+            "revisions": [],
+            "rule_summary": "Record task ownership before work and peer review before completion.",
+            "scope": "organization",
+            "status": "active",
+            "supporters": [
+              "builder",
+              "reviewer"
+            ],
+            "target_process": "task_lifecycle",
+            "usage_events": [
+              "protocol_event_000005",
+              "protocol_event_000006"
+            ],
+            "violation_events": []
+          }
+        ],
+        "tasks": [
+          {
+            "actual_effort": 2.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 2
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 3
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 5
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 6
+              },
+              {
+                "event": "completed",
+                "protocol_id": "protocol_task_ownership_review",
+                "tick": 7
+              }
+            ],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 1.0,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "done",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 7
+      },
+      "tick": 7
+    },
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "use_protocol",
+              "features": {
+                "coordination_gain": 0.3,
+                "institutional_memory_gain": 0.5,
+                "protocol_use_potential": 0.8
+              },
+              "object_id": "protocol_task_ownership_review",
+              "selected": true,
+              "utility": 0.59
+            }
+          ],
+          "chosen_action_id": "use_protocol",
+          "chosen_object_id": "protocol_task_ownership_review",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 8
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [
+            {
+              "action_id": "use_protocol",
+              "features": {
+                "coordination_gain": 0.3,
+                "institutional_memory_gain": 0.5,
+                "protocol_use_potential": 0.8
+              },
+              "object_id": "protocol_task_ownership_review",
+              "selected": true,
+              "utility": 0.966
+            }
+          ],
+          "chosen_action_id": "use_protocol",
+          "chosen_object_id": "protocol_task_ownership_review",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 8
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": 7,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002",
+            "event_000003",
+            "event_000004",
+            "event_000010",
+            "event_000011",
+            "event_000013",
+            "event_000014",
+            "event_000015"
+          ],
+          "linked_protocol_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": "Complete the demo deliverable completed with peer-review governance.",
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "resolved",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000003",
+              "event_type": "task_blocked",
+              "tick": 2
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000004",
+              "event_type": "task_blocked",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000010",
+              "event_type": "task_blocked",
+              "tick": 5
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000011",
+              "event_type": "task_blocked",
+              "tick": 6
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000013",
+              "event_type": "task_progressed",
+              "tick": 7
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000014",
+              "event_type": "protocol_used",
+              "tick": 7
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000015",
+              "event_type": "task_completed",
+              "tick": 7
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        },
+        {
+          "decision_summary": null,
+          "end_tick": 6,
+          "episode_id": "episode_00002",
+          "episode_type": "protocol_formation_episode",
+          "linked_event_ids": [
+            "event_000007",
+            "event_000008",
+            "event_000009",
+            "event_000012"
+          ],
+          "linked_protocol_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "linked_task_ids": [],
+          "outcome_summary": "The organization adopted Task ownership and peer review.",
+          "participants": [
+            "builder",
+            "reviewer"
+          ],
+          "problem_statement": "Record task ownership before work and peer review before completion.",
+          "produced_protocols": [
+            "protocol_task_ownership_review"
+          ],
+          "start_tick": 3,
+          "status": "resolved",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000007",
+              "event_type": "proposal_created",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000008",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "reviewer",
+              "event_id": "event_000009",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000012",
+              "event_type": "protocol_adopted",
+              "tick": 6
+            }
+          ],
+          "title": "Task ownership and peer review"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000017",
+          "event_type": "protocol_used",
+          "object_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "payload": {
+            "summary": "Builder used an adopted organization protocol."
+          },
+          "tick": 8,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "reviewer",
+          "event_id": "event_000018",
+          "event_type": "protocol_used",
+          "object_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "payload": {
+            "summary": "Reviewer used an adopted organization protocol."
+          },
+          "tick": 8,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [
+          {
+            "adopted_tick": 6,
+            "adoption_score": 0.9,
+            "affected_agents": [
+              "builder",
+              "reviewer"
+            ],
+            "affected_objects": [
+              "task_demo"
+            ],
+            "affected_protocols": [],
+            "approval_required_from": [
+              "builder",
+              "reviewer"
+            ],
+            "approved_by": [
+              "builder",
+              "reviewer"
+            ],
+            "created_at_tick": 3,
+            "expected_benefits": [
+              "clear ownership and auditable review"
+            ],
+            "expected_costs": [],
+            "failure_modes": [],
+            "family": "task_ownership_review",
+            "feasibility_score": 0.9,
+            "impact": {},
+            "object_created_id": "protocol_task_ownership_review",
+            "proposal_id": "proposal_00001",
+            "proposal_type": "protocol_proposal",
+            "proposed_solution": "record ownership before work and peer review before completion",
+            "proposer_agent_id": "builder",
+            "rejected_by": [],
+            "rejection_reason": "",
+            "required_actions": [
+              "claim_task",
+              "review_task"
+            ],
+            "required_artifacts": [],
+            "required_capabilities": [],
+            "required_participants": [],
+            "risk_score": 0.1,
+            "risks": [
+              "unreviewed work may be treated as complete"
+            ],
+            "source_episode_id": "episode_00001",
+            "source_episode_ids": [
+              "episode_00001"
+            ],
+            "source_event_ids": [
+              "event_000001",
+              "event_000002",
+              "event_000003",
+              "event_000004"
+            ],
+            "source_reflection_id": "reflection_00001",
+            "source_wish_id": "wish_00001",
+            "source_wish_ids": [
+              "wish_00001"
+            ],
+            "status": "adopted",
+            "suggested_revision": "",
+            "summary": "Record task ownership before work and peer review before completion.",
+            "supporters": [],
+            "target_problem": "Complete the demo deliverable needs an accountable peer-review rule.",
+            "title": "Task ownership and peer review",
+            "updated_at_tick": 6,
+            "usefulness_score": 0.9
+          }
+        ],
+        "protocols": [
+          {
+            "adoption_status": "adopted",
+            "emergence_level": "none",
+            "enforcement_events": [],
+            "first_tick": 3,
+            "impact_metrics": {},
+            "last_active_tick": 8,
+            "opposers": [],
+            "persistence_ticks": 5,
+            "proposal_event_id": "protocol_event_000001",
+            "proposer_id": "builder",
+            "protocol_id": "protocol_task_ownership_review",
+            "protocol_type": "task_ownership_review",
+            "revisions": [],
+            "rule_summary": "Record task ownership before work and peer review before completion.",
+            "scope": "organization",
+            "status": "active",
+            "supporters": [
+              "builder",
+              "reviewer"
+            ],
+            "target_process": "task_lifecycle",
+            "usage_events": [
+              "protocol_event_000005",
+              "protocol_event_000006",
+              "protocol_event_000007",
+              "protocol_event_000008"
+            ],
+            "violation_events": []
+          }
+        ],
+        "tasks": [
+          {
+            "actual_effort": 2.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 2
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 3
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 5
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 6
+              },
+              {
+                "event": "completed",
+                "protocol_id": "protocol_task_ownership_review",
+                "tick": 7
+              }
+            ],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 1.0,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "done",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 8
+      },
+      "tick": 8
+    },
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "use_protocol",
+              "features": {
+                "coordination_gain": 0.3,
+                "institutional_memory_gain": 0.5,
+                "protocol_use_potential": 0.8
+              },
+              "object_id": "protocol_task_ownership_review",
+              "selected": true,
+              "utility": 0.59
+            }
+          ],
+          "chosen_action_id": "use_protocol",
+          "chosen_object_id": "protocol_task_ownership_review",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 9
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [
+            {
+              "action_id": "use_protocol",
+              "features": {
+                "coordination_gain": 0.3,
+                "institutional_memory_gain": 0.5,
+                "protocol_use_potential": 0.8
+              },
+              "object_id": "protocol_task_ownership_review",
+              "selected": true,
+              "utility": 0.966
+            }
+          ],
+          "chosen_action_id": "use_protocol",
+          "chosen_object_id": "protocol_task_ownership_review",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 9
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": 7,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002",
+            "event_000003",
+            "event_000004",
+            "event_000010",
+            "event_000011",
+            "event_000013",
+            "event_000014",
+            "event_000015"
+          ],
+          "linked_protocol_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": "Complete the demo deliverable completed with peer-review governance.",
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "resolved",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000003",
+              "event_type": "task_blocked",
+              "tick": 2
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000004",
+              "event_type": "task_blocked",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000010",
+              "event_type": "task_blocked",
+              "tick": 5
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000011",
+              "event_type": "task_blocked",
+              "tick": 6
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000013",
+              "event_type": "task_progressed",
+              "tick": 7
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000014",
+              "event_type": "protocol_used",
+              "tick": 7
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000015",
+              "event_type": "task_completed",
+              "tick": 7
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        },
+        {
+          "decision_summary": null,
+          "end_tick": 6,
+          "episode_id": "episode_00002",
+          "episode_type": "protocol_formation_episode",
+          "linked_event_ids": [
+            "event_000007",
+            "event_000008",
+            "event_000009",
+            "event_000012"
+          ],
+          "linked_protocol_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "linked_task_ids": [],
+          "outcome_summary": "The organization adopted Task ownership and peer review.",
+          "participants": [
+            "builder",
+            "reviewer"
+          ],
+          "problem_statement": "Record task ownership before work and peer review before completion.",
+          "produced_protocols": [
+            "protocol_task_ownership_review"
+          ],
+          "start_tick": 3,
+          "status": "resolved",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000007",
+              "event_type": "proposal_created",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000008",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "reviewer",
+              "event_id": "event_000009",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000012",
+              "event_type": "protocol_adopted",
+              "tick": 6
+            }
+          ],
+          "title": "Task ownership and peer review"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000019",
+          "event_type": "protocol_used",
+          "object_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "payload": {
+            "summary": "Builder used an adopted organization protocol."
+          },
+          "tick": 9,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "reviewer",
+          "event_id": "event_000020",
+          "event_type": "protocol_used",
+          "object_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "payload": {
+            "summary": "Reviewer used an adopted organization protocol."
+          },
+          "tick": 9,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [
+          {
+            "adopted_tick": 6,
+            "adoption_score": 0.9,
+            "affected_agents": [
+              "builder",
+              "reviewer"
+            ],
+            "affected_objects": [
+              "task_demo"
+            ],
+            "affected_protocols": [],
+            "approval_required_from": [
+              "builder",
+              "reviewer"
+            ],
+            "approved_by": [
+              "builder",
+              "reviewer"
+            ],
+            "created_at_tick": 3,
+            "expected_benefits": [
+              "clear ownership and auditable review"
+            ],
+            "expected_costs": [],
+            "failure_modes": [],
+            "family": "task_ownership_review",
+            "feasibility_score": 0.9,
+            "impact": {},
+            "object_created_id": "protocol_task_ownership_review",
+            "proposal_id": "proposal_00001",
+            "proposal_type": "protocol_proposal",
+            "proposed_solution": "record ownership before work and peer review before completion",
+            "proposer_agent_id": "builder",
+            "rejected_by": [],
+            "rejection_reason": "",
+            "required_actions": [
+              "claim_task",
+              "review_task"
+            ],
+            "required_artifacts": [],
+            "required_capabilities": [],
+            "required_participants": [],
+            "risk_score": 0.1,
+            "risks": [
+              "unreviewed work may be treated as complete"
+            ],
+            "source_episode_id": "episode_00001",
+            "source_episode_ids": [
+              "episode_00001"
+            ],
+            "source_event_ids": [
+              "event_000001",
+              "event_000002",
+              "event_000003",
+              "event_000004"
+            ],
+            "source_reflection_id": "reflection_00001",
+            "source_wish_id": "wish_00001",
+            "source_wish_ids": [
+              "wish_00001"
+            ],
+            "status": "adopted",
+            "suggested_revision": "",
+            "summary": "Record task ownership before work and peer review before completion.",
+            "supporters": [],
+            "target_problem": "Complete the demo deliverable needs an accountable peer-review rule.",
+            "title": "Task ownership and peer review",
+            "updated_at_tick": 6,
+            "usefulness_score": 0.9
+          }
+        ],
+        "protocols": [
+          {
+            "adoption_status": "adopted",
+            "emergence_level": "none",
+            "enforcement_events": [],
+            "first_tick": 3,
+            "impact_metrics": {},
+            "last_active_tick": 9,
+            "opposers": [],
+            "persistence_ticks": 6,
+            "proposal_event_id": "protocol_event_000001",
+            "proposer_id": "builder",
+            "protocol_id": "protocol_task_ownership_review",
+            "protocol_type": "task_ownership_review",
+            "revisions": [],
+            "rule_summary": "Record task ownership before work and peer review before completion.",
+            "scope": "organization",
+            "status": "active",
+            "supporters": [
+              "builder",
+              "reviewer"
+            ],
+            "target_process": "task_lifecycle",
+            "usage_events": [
+              "protocol_event_000005",
+              "protocol_event_000006",
+              "protocol_event_000007",
+              "protocol_event_000008",
+              "protocol_event_000009",
+              "protocol_event_000010"
+            ],
+            "violation_events": []
+          }
+        ],
+        "tasks": [
+          {
+            "actual_effort": 2.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 2
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 3
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 5
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 6
+              },
+              {
+                "event": "completed",
+                "protocol_id": "protocol_task_ownership_review",
+                "tick": 7
+              }
+            ],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 1.0,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "done",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 9
+      },
+      "tick": 9
+    },
+    {
+      "decisions": [
+        {
+          "agent_id": "builder",
+          "candidates": [
+            {
+              "action_id": "use_protocol",
+              "features": {
+                "coordination_gain": 0.3,
+                "institutional_memory_gain": 0.5,
+                "protocol_use_potential": 0.8
+              },
+              "object_id": "protocol_task_ownership_review",
+              "selected": true,
+              "utility": 0.59
+            }
+          ],
+          "chosen_action_id": "use_protocol",
+          "chosen_object_id": "protocol_task_ownership_review",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 10
+        },
+        {
+          "agent_id": "reviewer",
+          "candidates": [
+            {
+              "action_id": "use_protocol",
+              "features": {
+                "coordination_gain": 0.3,
+                "institutional_memory_gain": 0.5,
+                "protocol_use_potential": 0.8
+              },
+              "object_id": "protocol_task_ownership_review",
+              "selected": true,
+              "utility": 0.966
+            }
+          ],
+          "chosen_action_id": "use_protocol",
+          "chosen_object_id": "protocol_task_ownership_review",
+          "policy": "b3_profile_conditioned_bounded_softmax",
+          "tick": 10
+        }
+      ],
+      "episodes": [
+        {
+          "decision_summary": null,
+          "end_tick": 7,
+          "episode_id": "episode_00001",
+          "episode_type": "work_episode",
+          "linked_event_ids": [
+            "event_000001",
+            "event_000002",
+            "event_000003",
+            "event_000004",
+            "event_000010",
+            "event_000011",
+            "event_000013",
+            "event_000014",
+            "event_000015"
+          ],
+          "linked_protocol_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "linked_task_ids": [
+            "task_demo"
+          ],
+          "outcome_summary": "Complete the demo deliverable completed with peer-review governance.",
+          "participants": [
+            "builder"
+          ],
+          "problem_statement": "Builder started Complete the demo deliverable.",
+          "produced_protocols": [],
+          "start_tick": 1,
+          "status": "resolved",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000001",
+              "event_type": "task_started",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000002",
+              "event_type": "task_progressed",
+              "tick": 1
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000003",
+              "event_type": "task_blocked",
+              "tick": 2
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000004",
+              "event_type": "task_blocked",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000010",
+              "event_type": "task_blocked",
+              "tick": 5
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000011",
+              "event_type": "task_blocked",
+              "tick": 6
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000013",
+              "event_type": "task_progressed",
+              "tick": 7
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000014",
+              "event_type": "protocol_used",
+              "tick": 7
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000015",
+              "event_type": "task_completed",
+              "tick": 7
+            }
+          ],
+          "title": "Complete the demo deliverable"
+        },
+        {
+          "decision_summary": null,
+          "end_tick": 6,
+          "episode_id": "episode_00002",
+          "episode_type": "protocol_formation_episode",
+          "linked_event_ids": [
+            "event_000007",
+            "event_000008",
+            "event_000009",
+            "event_000012"
+          ],
+          "linked_protocol_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "linked_task_ids": [],
+          "outcome_summary": "The organization adopted Task ownership and peer review.",
+          "participants": [
+            "builder",
+            "reviewer"
+          ],
+          "problem_statement": "Record task ownership before work and peer review before completion.",
+          "produced_protocols": [
+            "protocol_task_ownership_review"
+          ],
+          "start_tick": 3,
+          "status": "resolved",
+          "timeline": [
+            {
+              "actor_id": "builder",
+              "event_id": "event_000007",
+              "event_type": "proposal_created",
+              "tick": 3
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000008",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "reviewer",
+              "event_id": "event_000009",
+              "event_type": "proposal_approved",
+              "tick": 4
+            },
+            {
+              "actor_id": "builder",
+              "event_id": "event_000012",
+              "event_type": "protocol_adopted",
+              "tick": 6
+            }
+          ],
+          "title": "Task ownership and peer review"
+        }
+      ],
+      "events": [
+        {
+          "actor_id": "builder",
+          "event_id": "event_000021",
+          "event_type": "protocol_used",
+          "object_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "payload": {
+            "summary": "Builder used an adopted organization protocol."
+          },
+          "tick": 10,
+          "visibility": "organization"
+        },
+        {
+          "actor_id": "reviewer",
+          "event_id": "event_000022",
+          "event_type": "protocol_used",
+          "object_ids": [
+            "protocol_task_ownership_review"
+          ],
+          "payload": {
+            "summary": "Reviewer used an adopted organization protocol."
+          },
+          "tick": 10,
+          "visibility": "organization"
+        }
+      ],
+      "organization": {
+        "agents": [
+          {
+            "active_task_ids": [],
+            "agent_id": "builder",
+            "display_name": "Builder",
+            "role": "engineer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          },
+          {
+            "active_task_ids": [],
+            "agent_id": "reviewer",
+            "display_name": "Reviewer",
+            "role": "reviewer",
+            "status": "available",
+            "tools": [
+              "task_board"
+            ]
+          }
+        ],
+        "name": "Relic Minimal Organization",
+        "organization_id": "minimal-organization",
+        "proposals": [
+          {
+            "adopted_tick": 6,
+            "adoption_score": 0.9,
+            "affected_agents": [
+              "builder",
+              "reviewer"
+            ],
+            "affected_objects": [
+              "task_demo"
+            ],
+            "affected_protocols": [],
+            "approval_required_from": [
+              "builder",
+              "reviewer"
+            ],
+            "approved_by": [
+              "builder",
+              "reviewer"
+            ],
+            "created_at_tick": 3,
+            "expected_benefits": [
+              "clear ownership and auditable review"
+            ],
+            "expected_costs": [],
+            "failure_modes": [],
+            "family": "task_ownership_review",
+            "feasibility_score": 0.9,
+            "impact": {},
+            "object_created_id": "protocol_task_ownership_review",
+            "proposal_id": "proposal_00001",
+            "proposal_type": "protocol_proposal",
+            "proposed_solution": "record ownership before work and peer review before completion",
+            "proposer_agent_id": "builder",
+            "rejected_by": [],
+            "rejection_reason": "",
+            "required_actions": [
+              "claim_task",
+              "review_task"
+            ],
+            "required_artifacts": [],
+            "required_capabilities": [],
+            "required_participants": [],
+            "risk_score": 0.1,
+            "risks": [
+              "unreviewed work may be treated as complete"
+            ],
+            "source_episode_id": "episode_00001",
+            "source_episode_ids": [
+              "episode_00001"
+            ],
+            "source_event_ids": [
+              "event_000001",
+              "event_000002",
+              "event_000003",
+              "event_000004"
+            ],
+            "source_reflection_id": "reflection_00001",
+            "source_wish_id": "wish_00001",
+            "source_wish_ids": [
+              "wish_00001"
+            ],
+            "status": "adopted",
+            "suggested_revision": "",
+            "summary": "Record task ownership before work and peer review before completion.",
+            "supporters": [],
+            "target_problem": "Complete the demo deliverable needs an accountable peer-review rule.",
+            "title": "Task ownership and peer review",
+            "updated_at_tick": 6,
+            "usefulness_score": 0.9
+          }
+        ],
+        "protocols": [
+          {
+            "adoption_status": "adopted",
+            "emergence_level": "none",
+            "enforcement_events": [],
+            "first_tick": 3,
+            "impact_metrics": {},
+            "last_active_tick": 10,
+            "opposers": [],
+            "persistence_ticks": 7,
+            "proposal_event_id": "protocol_event_000001",
+            "proposer_id": "builder",
+            "protocol_id": "protocol_task_ownership_review",
+            "protocol_type": "task_ownership_review",
+            "revisions": [],
+            "rule_summary": "Record task ownership before work and peer review before completion.",
+            "scope": "organization",
+            "status": "active",
+            "supporters": [
+              "builder",
+              "reviewer"
+            ],
+            "target_process": "task_lifecycle",
+            "usage_events": [
+              "protocol_event_000005",
+              "protocol_event_000006",
+              "protocol_event_000007",
+              "protocol_event_000008",
+              "protocol_event_000009",
+              "protocol_event_000010",
+              "protocol_event_000011",
+              "protocol_event_000012"
+            ],
+            "violation_events": []
+          }
+        ],
+        "tasks": [
+          {
+            "actual_effort": 2.0,
+            "deadline_tick": null,
+            "dependencies": [],
+            "description": "Produce and review one organization-owned deliverable.",
+            "estimated_effort": 0.0,
+            "history": [
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 2
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 3
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 5
+              },
+              {
+                "event": "blocked_pending_review_protocol",
+                "tick": 6
+              },
+              {
+                "event": "completed",
+                "protocol_id": "protocol_task_ownership_review",
+                "tick": 7
+              }
+            ],
+            "owner_id": "builder",
+            "priority": 5,
+            "progress_evidence": [],
+            "progress_score": 1.0,
+            "required_skills": [
+              "implementation"
+            ],
+            "status": "done",
+            "task_id": "task_demo",
+            "title": "Complete the demo deliverable",
+            "visibility": "organization"
+          }
+        ],
+        "tick": 10
+      },
+      "tick": 10
+    }
+  ],
+  "organization_id": "minimal-organization",
+  "privacy": {
+    "private_memories_included": false,
+    "private_reflections_included": false,
+    "provider_messages_included": false
+  },
+  "run_id": "bundled-example-v1",
+  "schema_version": "relic-trace-v1",
+  "trace_sha256": "740261ae0348246f78fc3f51f3ff801106a7f64dc9aa120c9a826c7a83f97f08"
+}

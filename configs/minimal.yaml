@@ -1,0 +1,44 @@
+schema_version: relic-agent-config-v1
+organization:
+  id: minimal-organization
+  name: Relic Minimal Organization
+
+agents:
+  - id: builder
+    display_name: Builder
+    role: engineer
+    profile:
+      curiosity: 0.8
+      ownership_drive: 0.9
+      process_commitment: 0.6
+    skills:
+      implementation: 0.9
+    tools: [task_board]
+  - id: reviewer
+    display_name: Reviewer
+    role: reviewer
+    profile:
+      process_commitment: 0.9
+      quality_bar: 0.9
+      conformity: 0.8
+    skills:
+      review: 0.9
+    tools: [task_board]
+
+tasks:
+  - id: task_demo
+    title: Complete the demo deliverable
+    description: Produce and review one organization-owned deliverable.
+    priority: 5
+    owner: builder
+    required_skills: [implementation]
+
+governance:
+  min_approvers: 2
+  review_ticks: 3
+
+runtime:
+  seed: 7
+  ticks: 10
+  provider: mock
+  reflection_interval: 3

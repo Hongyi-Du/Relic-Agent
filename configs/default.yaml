@@ -1,0 +1,80 @@
+schema_version: relic-agent-config-v1
+organization:
+  id: default-organization
+  name: Relic Default Organization
+
+agents:
+  - id: aria
+    display_name: Aria Vale
+    role: coordinator
+    profile:
+      group_loyalty: 0.85
+      ownership_drive: 0.75
+      social_tact: 0.8
+    skills:
+      coordination: 0.9
+      workflow_design: 0.75
+    tools: [task_board, message]
+  - id: los_xi
+    display_name: Los Xi
+    role: community_steward
+    profile:
+      conformity: 0.65
+      group_loyalty: 0.8
+      long_termism: 0.75
+    skills:
+      customer_research: 0.85
+      documentation_quality: 0.7
+    tools: [task_board, message]
+  - id: ren
+    display_name: Ren Park
+    role: engineer
+    profile:
+      curiosity: 0.8
+      ownership_drive: 0.9
+      process_commitment: 0.55
+    skills:
+      implementation: 0.9
+      testing: 0.7
+    tools: [task_board, workspace]
+  - id: sol
+    display_name: Sol Reed
+    role: reviewer
+    profile:
+      process_commitment: 0.9
+      quality_bar: 0.9
+      risk_aversion: 0.7
+    skills:
+      testing: 0.9
+      review: 0.95
+      workflow_design: 0.8
+    tools: [task_board, workspace]
+
+tasks:
+  - id: task_runtime
+    title: Implement the organization runtime
+    description: Deliver a testable organization workflow.
+    priority: 5
+    owner: ren
+    required_skills: [implementation]
+  - id: task_review
+    title: Define the review evidence gate
+    description: Specify auditable completion evidence.
+    priority: 5
+    owner: sol
+    required_skills: [review]
+  - id: task_guide
+    title: Draft the operator guide
+    description: Explain roles, tasks, governance, and replay.
+    priority: 4
+    required_skills: [documentation_quality]
+
+governance:
+  min_approvers: 2
+  review_ticks: 3
+
+runtime:
+  seed: 42
+  ticks: 12
+  provider: mock
+  reflection_interval: 3
