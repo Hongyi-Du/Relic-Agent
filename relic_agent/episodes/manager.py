@@ -1,4 +1,4 @@
-"""Small substrate-independent episode manager around the extracted B3 schema."""
+"""Legacy mock episode manager retained for compatibility trace generation."""
 
 from __future__ import annotations
 

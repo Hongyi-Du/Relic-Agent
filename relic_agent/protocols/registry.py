@@ -1,4 +1,4 @@
-"""Auditable protocol proposal, adoption, use, enforcement, and retirement."""
+"""Legacy protocol registry kept behind the compatibility runtime boundary."""
 
 from __future__ import annotations
 

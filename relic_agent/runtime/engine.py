@@ -1,4 +1,10 @@
-"""Deterministic, auditable Relic Agent organization runtime."""
+"""Compatibility-only deterministic mock runtime.
+
+This runner is retained while the source HCI host adapter is ported. It keeps
+the public CLI, trace contract, Inspector, and launchers runnable, but it is
+not an authoritative B3/HCI execution runtime. Its emitted envelopes are
+validated by the vendored source core in observation-only mode.
+"""
 
 from __future__ import annotations
 
@@ -21,6 +27,7 @@ from relic_agent.governance import GovernanceManager
 from relic_agent.organization import AgentState, OrganizationState, Task, TaskStatus
 from relic_agent.reflection import ReflectionManager
 from relic_agent.replay.trace import build_trace
+from relic_agent.source_core import SourceCoreObservationBridge
 
 RUN_SCHEMA_VERSION = "relic-agent-run-v1"
 _RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -53,6 +60,13 @@ class RunResult:
 
 
 class OrganizationRuntime:
+    """Legacy compatibility entry point kept for the release shell.
+
+    New integrations must mount ``organization_core.OrganizationModule`` on a
+    source-compatible host. This class cannot activate that path and records
+    the limitation in every generated ``run.json``.
+    """
+
     def __init__(self, config: OrganizationConfig) -> None:
         self.config = config
         self.state = OrganizationState(config.organization_id, config.name)
@@ -103,6 +117,7 @@ class OrganizationRuntime:
         self._last_frame_event_index = 0
         self._last_frame_decision_index = 0
         self._last_frame_protocol_event_index = 0
+        self._source_core_bridge: SourceCoreObservationBridge | None = None
 
     def run(
         self,
@@ -120,6 +135,10 @@ class OrganizationRuntime:
         started_at = datetime.now(UTC).isoformat()
         output_directory = Path(output_root).expanduser().resolve() / actual_run_id
         output_directory.mkdir(parents=True, exist_ok=False)
+        self._source_core_bridge = SourceCoreObservationBridge.from_config(
+            self.config,
+            run_id=actual_run_id,
+        )
         config_snapshot_path = output_directory / "config.yaml"
         self._atomic_text(
             config_snapshot_path,
@@ -137,6 +156,7 @@ class OrganizationRuntime:
                     self._step_agent(self.state.agents[agent_id])
                 self._maybe_reflect_and_propose()
                 self._adopt_ready_proposals()
+                self._source_core_bridge.complete_tick(self.state.tick)
                 self._capture_frame(force=self.frames[-1]["tick"] != self.state.tick)
                 trace = self._write_public_trace(trace_path, actual_run_id)
                 self._write_status(status_path, actual_run_id, "running")
@@ -495,6 +515,8 @@ class OrganizationRuntime:
         if actor_id in self._recent_events:
             self._recent_events[actor_id].append(event)
             self._recent_events[actor_id] = self._recent_events[actor_id][-12:]
+        if self._source_core_bridge is not None:
+            self._source_core_bridge.publish_legacy_event(event)
         if visibility in {"organization", "public"}:
             self._capture_frame()
         return event
@@ -607,6 +629,9 @@ class OrganizationRuntime:
         finished_at: str,
         trace: dict[str, Any],
     ) -> dict[str, Any]:
+        source_core = self._source_core_bridge
+        if source_core is None:
+            raise RuntimeError("source-core observation bridge was not initialized")
         return {
             "schema_version": RUN_SCHEMA_VERSION,
             "run_id": run_id,
@@ -623,7 +648,9 @@ class OrganizationRuntime:
                 "seed": self.config.runtime.seed,
                 "ticks": self.state.tick,
                 "provider_calls_made": 0,
+                "authority": "legacy_compatibility_runtime",
             },
+            "source_core": source_core.status().as_dict(),
             "outputs": {
                 "config_snapshot": "config.yaml",
                 "status": "status.json",

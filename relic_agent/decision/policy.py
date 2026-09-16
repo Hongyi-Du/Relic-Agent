@@ -1,8 +1,11 @@
-"""Extracted B3 profile-conditioned structured decision policy.
+"""Legacy compatibility-only profile-conditioned selection policy.
 
-The scoring form and principal weights come from the locked B3 runtime. This
-module removes experiment-arm switches and scenario-specific bonuses while retaining the
-auditable rule:
+This deterministic mock policy predates the source-core port. It remains only
+for public trace/Inspector smoke coverage and must not be used as evidence of
+source HCI decision semantics. The canonical active-decision seam is provided
+by ``organization_core`` and stays fail-closed until an HCI host adapter exists.
+
+The compatibility scoring rule is:
 
     utility(candidate) = sum(weight(agent, feature) * feature_value)
 

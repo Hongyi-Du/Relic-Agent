@@ -1,4 +1,9 @@
-"""Append-only organization event ledger."""
+"""Compatibility trace ledger, not the canonical organization event contract.
+
+New host integrations use :mod:`organization_core`. This small ledger remains
+only so the existing public ``relic-trace-v1`` release/Inspector path can run
+while the source HCI adapter is still unavailable.
+"""
 
 from __future__ import annotations
 

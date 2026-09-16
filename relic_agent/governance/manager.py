@@ -1,10 +1,13 @@
-"""Explicit-approval governance extracted from the B3 proposal lifecycle.
+"""Compatibility governance with source-core approval checks.
 
-Raw reflections and wishes cannot directly create a protocol. The only path is
-wish -> proposal -> review latency -> distinct approvals -> adoption.
+The surrounding proposal/protocol objects are temporary compatibility data,
+not a replacement for the HCI implementation. The approval quorum, named
+approver, and review-latency decision is delegated to the vendored source core.
 """
 
 from __future__ import annotations
+
+from organization_core import ApprovalCheckDecision, ApprovalCheckRequest, ApprovalPolicy
 
 from relic_agent.governance.models import Proposal
 from relic_agent.protocols.registry import ProtocolRegistry
@@ -31,6 +34,7 @@ class GovernanceManager:
             min_supporters=min_approvers,
             review_ticks=review_ticks,
         )
+        self._approval_policy = ApprovalPolicy()
         self._sequence = 0
 
     def propose_from_wish(self, wish: Wish, *, tick: int) -> Proposal:
@@ -90,10 +94,29 @@ class GovernanceManager:
         return proposal
 
     def ready(self, proposal: Proposal, *, tick: int) -> bool:
-        return (
-            proposal.status == "under_review"
-            and len(set(proposal.approved_by)) >= self.min_approvers
-            and tick - proposal.created_at_tick >= self.review_ticks
+        return proposal.status == "under_review" and self.approval_decision(
+            proposal,
+            tick=tick,
+        ).ready
+
+    def approval_decision(
+        self,
+        proposal: Proposal,
+        *,
+        tick: int,
+    ) -> ApprovalCheckDecision:
+        """Route compatibility approval state through the canonical core policy."""
+
+        return self._approval_policy.evaluate(
+            ApprovalCheckRequest(
+                request_id=proposal.proposal_id,
+                required_approver_ids=tuple(proposal.approval_required_from),
+                approved_by_ids=tuple(proposal.approved_by),
+                elapsed_steps=max(0, tick - proposal.created_at_tick),
+                min_review_steps=self.review_ticks,
+                min_distinct_approvers=self.min_approvers,
+                fallback_min_approvers=self.min_approvers,
+            )
         )
 
     def adopt(self, proposal_id: str, *, tick: int) -> str:

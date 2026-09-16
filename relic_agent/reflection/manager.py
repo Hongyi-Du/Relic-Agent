@@ -1,4 +1,4 @@
-"""Deterministic no-provider reflection path with B3 lineage invariants."""
+"""Legacy deterministic reflection stub for compatibility trace generation."""
 
 from __future__ import annotations
 

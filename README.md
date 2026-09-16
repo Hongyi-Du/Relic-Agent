@@ -2,16 +2,16 @@
 
 > **Run your own Relic organization.**
 
-Relic Agent is a general-purpose agent organization runtime distilled from the
-Relic B3 implementation. It is not the paper benchmark or reproduction
-repository. Organizations have persistent members, roles, task ownership,
-profile-conditioned decisions, events, episodes, reflection, proposals,
-governance, protocol lifecycles, and auditable replay.
+Relic Agent is a release-facing shell around a source-first organization-core
+extraction. It is not the paper benchmark or a claim of complete B3/HCI
+reproduction. The canonical portable contracts/state/host seam is vendored
+from the audited source revision; the deterministic mock lifecycle remains only
+to keep the CLI, public trace, Inspector, Docker path, and wrappers runnable.
 
-This repository is currently in its first P1 extraction milestone. The
-deterministic mock runtime, default/minimal organizations, fail-closed public
-trace contract, replay/live Inspector, Docker path, and Linux/WSL/PowerShell
-thin wrappers are implemented. Live model-provider adapters remain later work.
+The mock lifecycle is explicitly non-authoritative. It is observed through the
+source-core event contract, and every `run.json` says that active HCI execution
+is unavailable/fail-closed. Do not treat a successful mock run as a paper
+result. See [source provenance and boundary](docs/SOURCE_PROVENANCE.md).
 
 ## Quickstart
 
@@ -139,10 +139,15 @@ development-machine paths.
 
 > **运行你自己的 Relic organization。**
 
-`relic-agent` 是从 Relic B3 中提取的通用 Agent Organization runtime，不是
-论文 benchmark 或论文复现仓库。当前第一阶段已经提供持久 agent、角色、任务与
-ownership、profile-conditioned 决策、event/episode、reflection/wish、显式审批、
-protocol lifecycle、公开 trace 和无 API 成本 replay。
+`relic-agent` 是一个面向发布的壳层，围绕 source-first 的 organization-core
+抽取构建；它不是论文 benchmark，也不宣称已完整复现 B3/HCI。权威的通用
+contracts/state/host seam 来自经审计的源代码；现有 deterministic mock lifecycle
+仅用于保持 CLI、公开 trace、Inspector、Docker 和 wrappers 可运行。
+
+mock lifecycle 被明确标记为非权威：其事件会经过 source-core contract 校验，
+每个 `run.json` 都会声明 active HCI execution 为 unavailable/fail-closed。成功的
+mock run 不能当作论文结果。详见
+[source provenance and boundary](docs/SOURCE_PROVENANCE.md)。
 
 当前可直接复制运行：
 

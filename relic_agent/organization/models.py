@@ -1,4 +1,7 @@
-"""Persistent organization state shared by the runtime and replay exporter."""
+"""Legacy mock state shared by the compatibility runtime and replay exporter.
+
+Portable state for new integrations lives in ``organization_core.state``.
+"""
 
 from __future__ import annotations
 

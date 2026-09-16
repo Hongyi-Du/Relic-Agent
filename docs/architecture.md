@@ -1,47 +1,36 @@
 # Runtime architecture
 
-This milestone is an extraction of the general organization mechanisms from
-the locked Relic B3 code at commit
-`dda36fb563375060ae8d8850300db01eb4695d29`. It deliberately excludes the paper
-arms, benchmark/evaluator stack, scenario-specific domain systems, HCI code,
-and historical development material.
-
-The retained mechanism chain is:
+Relic Agent currently has two deliberately separated layers.
 
 ```text
-config
-  -> persistent members + tasks/ownership
-  -> profile-conditioned structured action selection
-  -> append-only events
-  -> episodes
-  -> private reflection -> wish
-  -> public proposal
-  -> explicit distinct approvals + review latency
-  -> protocol adoption -> use/amendment/retirement
-  -> curated, digest-bound public trace
-  -> replay/live Inspector
+source-core contracts/state/host seam (canonical)
+  -> byte-exact organization_core from 041ddee1aa109a9b65dfdad7bdb8e258ad0a293e
+  -> append-only shadow observation and portable bootstrap state
+  -> active HCI host adapter: unavailable, fail closed
+
+legacy compatibility shell (non-authoritative)
+  -> deterministic mock lifecycle used by existing CLI/trace/Inspector smoke
+  -> emitted events validated through the source-core shadow seam
+  -> no claim of HCI/B3 execution parity
 ```
 
-Important invariants:
+The canonical layer is deliberately dependency-free. It owns public contracts,
+portable organization state, host capability/receipt checks, approval policy,
+typed gates, routing, and synthesis request/result schemas. Its provenance and
+byte-exact conformance checks are described in
+[source provenance](SOURCE_PROVENANCE.md).
 
-- a raw reflection or wish cannot directly mutate organization protocols;
-- protocol adoption requires explicit approvals and cannot occur in the proposal tick;
-- profiles affect scored action utility and the runtime keeps an internal policy trace;
-- public decision summaries expose only the selected action/object, never candidate
-  features, utilities, prompts, rationale, or other evaluator-side policy audit;
-- private reflection text and memories are not exported in `relic-trace-v1`;
-- config snapshots and trace digests make a run self-describing;
-- mock execution is deterministic for a fixed config and seed and makes no provider call.
+The compatibility shell is retained only to avoid breaking the release-facing
+CLI, `relic-trace-v1`, Inspector, Docker image, and wrappers while the real HCI
+host adapter is ported. It does not materialize source episode/reflection/
+proposal/protocol/growth/policy/execution behavior. Its run manifest makes that
+boundary explicit and a request for active HCI execution fails instead of
+silently using the mock implementation.
 
-`relic-trace-v1` is the only Inspector input. Each public event is paired with a
-post-event organization snapshot; private events are omitted. The runtime
-atomically replaces `trace.json` after every tick. Live Inspector refreshes are
-append-only: a digest failure, partial write, shortened history, or rewritten
-frame is ignored while the last verified trace remains visible with degraded
-health. The Inspector never reads checkpoints, runtime dumps, private memories,
-or provider messages.
-
-The extracted task, episode, reflection/wish, proposal, and protocol schemas,
-plus the protocol registry, retain the B3 lineage. The new boundary code is the
-standalone package/config/CLI layer and a substrate-independent mock runtime used
-for installation and lifecycle validation.
+`relic-trace-v1` remains the only Inspector input. Each public event is paired
+with a post-event organization snapshot; private compatibility events are not
+exported. The runtime atomically replaces `trace.json` after every tick. Live
+Inspector refreshes are append-only: a digest failure, partial write, shortened
+history, or rewritten frame is ignored while the last verified trace remains
+visible with degraded health. The Inspector never reads private memories,
+provider messages, or source-core private envelopes.

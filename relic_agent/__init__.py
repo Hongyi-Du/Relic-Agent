@@ -1,4 +1,4 @@
-"""Relic Agent: a general-purpose persistent agent organization runtime."""
+"""Relic Agent release shell and source-first organization-core extraction."""
 
 from relic_agent.runtime.engine import OrganizationRuntime, RunResult
 

@@ -17,6 +17,7 @@ COPY pyproject.toml uv.lock README.md ./
 COPY configs ./configs
 COPY examples ./examples
 COPY relic_agent ./relic_agent
+COPY organization_core ./organization_core
 
 RUN uv sync --frozen --no-dev --no-editable \
     && mkdir -p /data/runs \
