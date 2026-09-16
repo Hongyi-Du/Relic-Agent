@@ -34,6 +34,7 @@ class Protocol:
     protocol_id: str
     protocol_type: str
     proposer_id: str = ""
+    created_from_proposal_id: str | None = None
     proposal_event_id: str = ""
     rule_summary: str = ""
     scope: str = "organization"

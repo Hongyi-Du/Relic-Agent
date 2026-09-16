@@ -15,6 +15,7 @@ from typing import Sequence
 from dotenv import load_dotenv
 
 from relic_agent.config import ConfigError, load_config
+from relic_agent.inspector import inspector_static_root, serve_inspector
 from relic_agent.replay import load_trace
 from relic_agent.runtime import OrganizationRuntime
 
@@ -55,20 +56,45 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--config", type=Path, required=True)
     run.add_argument("--output-root", type=Path, default=_default_output_root())
     run.add_argument("--ticks", type=int, default=None)
+    run.add_argument("--run-id", default=None)
 
     default = commands.add_parser("run-default", help="run the bundled default organization")
     default.add_argument("--output-root", type=Path, default=_default_output_root())
     default.add_argument("--ticks", type=int, default=None)
+    default.add_argument("--run-id", default=None)
 
     minimal = commands.add_parser("run-minimal", help="run the bundled minimal organization")
     minimal.add_argument("--output-root", type=Path, default=_default_output_root())
     minimal.add_argument("--ticks", type=int, default=None)
+    minimal.add_argument("--run-id", default=None)
 
     replay = commands.add_parser("replay", help="validate and summarize a relic-trace-v1 file")
     replay.add_argument("--trace", type=Path, required=True)
 
     commands.add_parser("replay-example", help="validate the bundled no-cost lifecycle replay")
+
+    inspect = commands.add_parser("inspect", help="open the public Inspector for a trace")
+    inspect.add_argument("--trace", type=Path, required=True)
+    _add_inspector_arguments(inspect)
+
+    inspect_example = commands.add_parser(
+        "inspect-example", help="open the public Inspector with the bundled lifecycle replay"
+    )
+    _add_inspector_arguments(inspect_example)
     return parser
+
+
+def _add_inspector_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--mode", choices=("replay", "live"), default="replay")
+    parser.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help="explicitly allow an unauthenticated non-loopback bind",
+    )
+    parser.add_argument("--open-browser", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
 
 
 def _environment_report(config_path: Path | None) -> dict:
@@ -101,22 +127,30 @@ def _environment_report(config_path: Path | None) -> dict:
                 },
             }
         )
-    checks.extend(
-        [
-            {
-                "name": "provider_credentials",
-                "status": "skip",
-                "details": {"reason": "mock provider does not require credentials"},
-            },
+    checks.append(
+        {
+            "name": "provider_credentials",
+            "status": "skip",
+            "details": {"reason": "mock provider does not require credentials"},
+        }
+    )
+    try:
+        assets = inspector_static_root()
+        replay = load_trace(_bundled_path("examples/replay", "trace.json"))
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        checks.append({"name": "inspector", "status": "fail", "details": {"reason": str(exc)}})
+    else:
+        checks.append(
             {
                 "name": "inspector",
-                "status": "warn",
+                "status": "pass",
                 "details": {
-                    "reason": "Inspector integration is scheduled for the next P1 milestone"
+                    "assets": sorted(path.name for path in assets.iterdir() if path.is_file()),
+                    "trace_schema": replay["schema_version"],
+                    "runtime": "bundled-static",
                 },
-            },
-        ]
-    )
+            }
+        )
     failed = any(check["status"] == "fail" for check in checks)
     return {
         "schema_version": "relic-agent-environment-report-v1",
@@ -126,9 +160,14 @@ def _environment_report(config_path: Path | None) -> dict:
     }
 
 
-def _run(config_path: Path, output_root: Path, ticks: int | None) -> dict:
+def _run(
+    config_path: Path,
+    output_root: Path,
+    ticks: int | None,
+    run_id: str | None = None,
+) -> dict:
     config = load_config(config_path)
-    result = OrganizationRuntime(config).run(output_root=output_root, ticks=ticks)
+    result = OrganizationRuntime(config).run(output_root=output_root, ticks=ticks, run_id=run_id)
     return result.to_dict()
 
 
@@ -141,7 +180,8 @@ def _replay_summary(trace_path: Path) -> dict:
         "status": "passed",
         "run_id": trace["run_id"],
         "trace_sha256": trace["trace_sha256"],
-        "ticks": len(trace["frames"]),
+        "ticks": last["tick"],
+        "frames": len(trace["frames"]),
         "agents": len(organization["agents"]),
         "tasks": len(organization["tasks"]),
         "proposals": len(organization["proposals"]),
@@ -171,15 +211,41 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
             return 0
         if args.command == "run":
-            result = _run(args.config, args.output_root, args.ticks)
+            result = _run(args.config, args.output_root, args.ticks, args.run_id)
         elif args.command == "run-default":
-            result = _run(_bundled_path("configs", "default.yaml"), args.output_root, args.ticks)
+            result = _run(
+                _bundled_path("configs", "default.yaml"),
+                args.output_root,
+                args.ticks,
+                args.run_id,
+            )
         elif args.command == "run-minimal":
-            result = _run(_bundled_path("configs", "minimal.yaml"), args.output_root, args.ticks)
+            result = _run(
+                _bundled_path("configs", "minimal.yaml"),
+                args.output_root,
+                args.ticks,
+                args.run_id,
+            )
         elif args.command == "replay":
             result = _replay_summary(args.trace)
         elif args.command == "replay-example":
             result = _replay_summary(_bundled_path("examples/replay", "trace.json"))
+        elif args.command in {"inspect", "inspect-example"}:
+            trace_path = (
+                args.trace
+                if args.command == "inspect"
+                else _bundled_path("examples/replay", "trace.json")
+            )
+            serve_inspector(
+                trace_path=trace_path,
+                host=args.host,
+                port=args.port,
+                mode=args.mode,
+                open_browser=args.open_browser,
+                verbose=args.verbose,
+                allow_remote=args.allow_remote,
+            )
+            return 0
         else:
             raise AssertionError(f"unhandled command: {args.command}")
         print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))

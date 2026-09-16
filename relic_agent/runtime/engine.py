@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 import tempfile
 import uuid
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ from relic_agent.reflection import ReflectionManager
 from relic_agent.replay.trace import build_trace
 
 RUN_SCHEMA_VERSION = "relic-agent-run-v1"
+_RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 
 @dataclass(frozen=True)
@@ -100,6 +102,7 @@ class OrganizationRuntime:
         }
         self._last_frame_event_index = 0
         self._last_frame_decision_index = 0
+        self._last_frame_protocol_event_index = 0
 
     def run(
         self,
@@ -112,15 +115,9 @@ class OrganizationRuntime:
         if total_ticks < 1:
             raise ValueError("ticks must be positive")
         actual_run_id = run_id or str(uuid.uuid4())
+        if not _RUN_ID_RE.fullmatch(actual_run_id) or ".." in actual_run_id:
+            raise ValueError("run_id must be a safe 1-128 character identifier")
         started_at = datetime.now(UTC).isoformat()
-        for tick in range(1, total_ticks + 1):
-            self.state.tick = tick
-            for agent_id in sorted(self.state.agents):
-                self._step_agent(self.state.agents[agent_id])
-            self._maybe_reflect_and_propose()
-            self._adopt_ready_proposals()
-            self._capture_frame()
-
         output_directory = Path(output_root).expanduser().resolve() / actual_run_id
         output_directory.mkdir(parents=True, exist_ok=False)
         config_snapshot_path = output_directory / "config.yaml"
@@ -128,14 +125,36 @@ class OrganizationRuntime:
             config_snapshot_path,
             self.config.source_path.read_text(encoding="utf-8"),
         )
-        trace = build_trace(
-            run_id=actual_run_id,
-            organization_id=self.state.organization_id,
-            config_digest=self.config.digest,
-            frames=self.frames,
-        )
         trace_path = output_directory / "trace.json"
-        self._atomic_json(trace_path, trace)
+        status_path = output_directory / "status.json"
+        self._capture_frame(force=True)
+        self._write_status(status_path, actual_run_id, "running")
+        try:
+            trace = self._write_public_trace(trace_path, actual_run_id)
+            for tick in range(1, total_ticks + 1):
+                self.state.tick = tick
+                for agent_id in sorted(self.state.agents):
+                    self._step_agent(self.state.agents[agent_id])
+                self._maybe_reflect_and_propose()
+                self._adopt_ready_proposals()
+                self._capture_frame(force=self.frames[-1]["tick"] != self.state.tick)
+                trace = self._write_public_trace(trace_path, actual_run_id)
+                self._write_status(status_path, actual_run_id, "running")
+        except BaseException as exc:
+            if self.frames[-1]["tick"] != self.state.tick:
+                self._capture_frame(force=True)
+            try:
+                self._write_public_trace(trace_path, actual_run_id)
+            except Exception:
+                pass
+            self._write_status(
+                status_path,
+                actual_run_id,
+                "failed",
+                error_type=type(exc).__name__,
+            )
+            raise
+
         manifest = self._manifest(
             run_id=actual_run_id,
             started_at=started_at,
@@ -144,15 +163,7 @@ class OrganizationRuntime:
         )
         manifest_path = output_directory / "run.json"
         self._atomic_json(manifest_path, manifest)
-        self._atomic_json(
-            output_directory / "status.json",
-            {
-                "schema_version": "relic-agent-status-v1",
-                "run_id": actual_run_id,
-                "status": "completed",
-                "tick": self.state.tick,
-            },
-        )
+        self._write_status(status_path, actual_run_id, "completed")
         completed = sum(
             1
             for task in self.state.tasks.values()
@@ -484,17 +495,48 @@ class OrganizationRuntime:
         if actor_id in self._recent_events:
             self._recent_events[actor_id].append(event)
             self._recent_events[actor_id] = self._recent_events[actor_id][-12:]
+        if visibility in {"organization", "public"}:
+            self._capture_frame()
         return event
 
-    def _capture_frame(self) -> None:
+    def _capture_frame(self, *, force: bool = False) -> None:
         events = self.events.public_since(self._last_frame_event_index)
         decisions = [
-            trace.to_dict() for trace in self.decision_traces[self._last_frame_decision_index :]
+            {
+                "decision_id": f"decision_{index:06d}",
+                "tick": trace.tick,
+                "agent_id": trace.agent_id,
+                "chosen_action_id": trace.chosen_action_id,
+                "chosen_object_id": trace.chosen_object_id,
+            }
+            for index, trace in enumerate(
+                self.decision_traces[self._last_frame_decision_index :],
+                start=self._last_frame_decision_index + 1,
+            )
         ]
+        governance_events = [
+            {
+                "event_id": event.event_id,
+                "event_type": event.event_type,
+                "protocol_id": event.protocol_id,
+                "actor_id": event.actor_id,
+                "tick": event.tick,
+                "data": dict(event.data),
+            }
+            for event in self.governance.protocol_registry.events[
+                self._last_frame_protocol_event_index :
+            ]
+        ]
+        if not force and not events and not decisions and not governance_events:
+            return
         self._last_frame_event_index = len(self.events.events)
         self._last_frame_decision_index = len(self.decision_traces)
+        self._last_frame_protocol_event_index = len(self.governance.protocol_registry.events)
+        sequence = len(self.frames)
         self.frames.append(
             {
+                "frame_id": f"frame_{sequence:06d}",
+                "sequence": sequence,
                 "tick": self.state.tick,
                 "organization": self.state.public_dict(),
                 "events": events,
@@ -505,6 +547,7 @@ class OrganizationRuntime:
                     )
                 ],
                 "decisions": decisions,
+                "governance_events": governance_events,
             }
         )
 
@@ -527,6 +570,34 @@ class OrganizationRuntime:
             "produced_protocols": list(episode.produced_protocols),
             "timeline": [dict(item) for item in episode.timeline],
         }
+
+    def _write_public_trace(self, path: Path, run_id: str) -> dict[str, Any]:
+        trace = build_trace(
+            run_id=run_id,
+            organization_id=self.state.organization_id,
+            config_digest=self.config.digest,
+            frames=self.frames,
+        )
+        self._atomic_json(path, trace)
+        return trace
+
+    def _write_status(
+        self,
+        path: Path,
+        run_id: str,
+        status: str,
+        *,
+        error_type: str | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {
+            "schema_version": "relic-agent-status-v1",
+            "run_id": run_id,
+            "status": status,
+            "tick": self.state.tick,
+        }
+        if error_type:
+            payload["error_type"] = error_type
+        self._atomic_json(path, payload)
 
     def _manifest(
         self,

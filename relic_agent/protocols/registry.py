@@ -69,6 +69,7 @@ class ProtocolRegistry:
         target_process: str = "",
         tick: int = 0,
         protocol_id: str | None = None,
+        created_from_proposal_id: str | None = None,
     ) -> Protocol:
         identifier = protocol_id or f"protocol_{protocol_type}"
         if identifier in self.protocols:
@@ -78,6 +79,7 @@ class ProtocolRegistry:
             protocol_id=identifier,
             protocol_type=protocol_type,
             proposer_id=proposer_id,
+            created_from_proposal_id=created_from_proposal_id,
             proposal_event_id=proposal_event.event_id,
             rule_summary=rule_summary,
             scope=scope,

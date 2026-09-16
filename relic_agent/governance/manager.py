@@ -109,6 +109,7 @@ class GovernanceManager:
             target_process="task_lifecycle",
             tick=proposal.created_at_tick,
             protocol_id=protocol_id,
+            created_from_proposal_id=proposal.proposal_id,
         )
         for approver in proposal.approved_by:
             if protocol.adoption_status == "proposed":

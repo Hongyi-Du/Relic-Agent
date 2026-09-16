@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+import relic_agent.cli as cli
 from relic_agent.cli import main
 
 
@@ -32,3 +33,41 @@ def test_invalid_config_returns_friendly_error(
     captured = capsys.readouterr()
     assert "relic-agent:" in captured.err
     assert "Traceback" not in captured.err
+
+
+@pytest.mark.release
+def test_inspect_example_forwards_only_canonical_server_options(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    received = {}
+
+    def fake_serve(**kwargs) -> None:
+        received.update(kwargs)
+
+    monkeypatch.setattr(cli, "serve_inspector", fake_serve)
+
+    assert (
+        main(
+            [
+                "inspect-example",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "9012",
+                "--mode",
+                "live",
+                "--allow-remote",
+                "--verbose",
+            ]
+        )
+        == 0
+    )
+    assert received == {
+        "allow_remote": True,
+        "host": "0.0.0.0",
+        "mode": "live",
+        "open_browser": False,
+        "port": 9012,
+        "trace_path": cli._bundled_path("examples/replay", "trace.json"),
+        "verbose": True,
+    }
