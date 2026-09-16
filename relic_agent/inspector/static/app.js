@@ -231,7 +231,22 @@ function renderOverview(container) {
     privacy.provider_messages_included ? "provider messages present" : "provider messages excluded",
   ].join(" · ");
   append(notice, element("strong", "", "Public trace boundary. "), document.createTextNode(privacyText));
-  container.append(sectionTitle("Trace contract"), notice);
+  const causalNotice = element("div", "notice");
+  append(
+    causalNotice,
+    element("strong", "", "Descriptive evidence only. "),
+    document.createTextNode(
+      "Observed lineage and state differences record sequence and provenance; they do not establish causal attribution to a protocol, member, or mechanism.",
+    ),
+  );
+  causalNotice.append(
+    element(
+      "p",
+      "",
+      "HCI-facing use is an interface demonstration or formative artifact unless separately supported by reviewed participant-study evidence; it is not a powered participant evaluation.",
+    ),
+  );
+  container.append(sectionTitle("Trace contract"), notice, causalNotice);
 
   const events = allEvents().filter((item) => item.frameIndex <= state.frameIndex).slice(-6).reverse();
   container.append(sectionTitle("Recent public events"));

@@ -13,6 +13,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from relic_agent.replay import load_trace
+from relic_agent.core.hashing import canonical_sha256
 
 
 class InspectorError(ValueError):
@@ -65,14 +66,16 @@ class TraceSource:
             if (
                 key not in candidate
                 or key not in self._cached
-                or candidate[key] != self._cached[key]
+                or canonical_sha256(candidate[key]) != canonical_sha256(self._cached[key])
             ):
                 raise InspectorError(f"live trace changed immutable field: {key}")
         current_frames = self._cached["frames"]
         candidate_frames = candidate["frames"]
         if len(candidate_frames) < len(current_frames):
             raise InspectorError("live trace cannot remove published frames")
-        if candidate_frames[: len(current_frames)] != current_frames:
+        if canonical_sha256(candidate_frames[: len(current_frames)]) != canonical_sha256(
+            current_frames
+        ):
             raise InspectorError("live trace cannot rewrite published frames")
 
 
@@ -83,6 +86,7 @@ class InspectorServer(ThreadingHTTPServer):
     trace_source: TraceSource
     static_root: Path
     verbose: bool
+    allow_remote: bool
 
 
 class InspectorRequestHandler(BaseHTTPRequestHandler):
@@ -120,6 +124,13 @@ class InspectorRequestHandler(BaseHTTPRequestHandler):
         self._method_not_allowed()
 
     def _dispatch(self, *, body: bool) -> None:
+        if not self.server.allow_remote and not _is_loopback_host_header(self.headers.get("Host")):
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"status": "invalid_host"},
+                body=body,
+            )
+            return
         path = urlsplit(self.path).path
         if path == "/api/health":
             trace = self.server.trace_source.read()
@@ -226,6 +237,24 @@ def _validate_host(host: str, *, allow_remote: bool) -> str:
     return selected
 
 
+def _is_loopback_host_header(value: str | None) -> bool:
+    if not value:
+        return False
+    try:
+        parsed = urlsplit(f"//{value}")
+        _ = parsed.port
+    except ValueError:
+        return False
+    return (
+        parsed.hostname in {"127.0.0.1", "localhost"}
+        and parsed.username is None
+        and parsed.password is None
+        and not parsed.path
+        and not parsed.query
+        and not parsed.fragment
+    )
+
+
 def create_inspector_server(
     *,
     trace_path: str | Path,
@@ -246,6 +275,7 @@ def create_inspector_server(
     server.trace_source = trace_source
     server.static_root = static_root
     server.verbose = verbose
+    server.allow_remote = allow_remote
     return server
 
 

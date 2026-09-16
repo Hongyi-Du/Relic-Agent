@@ -59,13 +59,19 @@ appears. This avoids treating a half-written file as organization state.
 The loader rejects the trace unless all of the following hold:
 
 - the top-level schema is exactly `relic-trace-v1`;
-- its SHA-256 covers the complete public payload;
+- its SHA-256 covers the complete public payload as a self-consistency check
+  (not an author signature or independent proof of run provenance);
 - frame sequence is contiguous and ticks are non-decreasing;
-- every public event is paired with its post-event organization snapshot;
+- each frame contains at most one ordinary public event, so every published
+  event is paired with one post-event organization snapshot;
 - core agents, tasks, proposals, and protocols are explicitly published;
 - all privacy flags are present and `false`;
-- private events, blocked private fields, credential-like values, local user
-  paths, non-finite numbers, and unsupported schema fields are absent;
+- nested public records use typed allowlists rather than arbitrary data
+  containers;
+- private events, blocked private fields (including camelCase variants),
+  credential-like values, absolute local paths, inconsistent object references,
+  duplicate JSON keys, non-finite numbers, and unsupported schema fields are
+  absent;
 - public decision records contain only the selected action/object summary, not
   candidate features, utilities, prompts, rationale, or evaluator-side policy
   audit.
@@ -91,16 +97,23 @@ Artifacts, repository state, and evaluation annotations are optional. When a
 trace does not publish one of these collections, the panel says unavailable;
 it does not display a misleading zero.
 
+The Inspector is descriptive evidence. Recorded sequence, object lineage, and
+state differences do not establish causal attribution to a protocol, member, or
+mechanism. Any HCI-facing use is an interface demonstration or formative
+artifact unless separately supported by reviewed participant-study evidence; it
+is not a powered participant evaluation.
+
 ## Network boundary
 
 Native and WSL launches bind `127.0.0.1` by default and emit no CORS allowance.
 The server exposes only `/`, `/index.html`, `/app.css`, `/app.js`,
 `/api/health`, and `/api/trace`. Responses use a restrictive Content Security
-Policy and no-store headers.
+Policy, loopback Host-header validation, and no-store headers.
 
 The Inspector has no authentication. A non-loopback bind is therefore rejected
-unless `--allow-remote` is supplied explicitly. Docker uses this opt-in only
-inside the container while Compose maps the host port to `127.0.0.1`.
+unless `--allow-remote` is supplied explicitly; that opt-in also permits remote
+Host headers. Docker uses this opt-in only inside the container while Compose
+maps the host port to `127.0.0.1`.
 
 ## 当前边界
 

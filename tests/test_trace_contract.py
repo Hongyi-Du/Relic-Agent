@@ -31,6 +31,10 @@ def _write(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
 
+def _last_public_event(trace: dict) -> dict:
+    return next(frame["events"][0] for frame in reversed(trace["frames"]) if frame["events"])
+
+
 @pytest.mark.replay
 def test_public_trace_is_event_synchronized_and_excludes_policy_audit(tmp_path: Path) -> None:
     trace, _ = _run(tmp_path)
@@ -87,7 +91,7 @@ def test_public_trace_relations_resolve_across_governance_and_task_state(tmp_pat
         ),
         (
             lambda trace: trace["frames"][0].__setitem__("private_memory", {"text": "hidden"}),
-            "unsupported fields",
+            "blocked field",
         ),
         (
             lambda trace: trace["frames"][-1]["organization"]["tasks"][0].__setitem__(
@@ -100,6 +104,60 @@ def test_public_trace_relations_resolve_across_governance_and_task_state(tmp_pat
                 "description", "Use sk-abcdefghijklmnopqrstuvwxyz"
             ),
             "credential-like",
+        ),
+        (
+            lambda trace: trace["frames"][-1]["organization"]["tasks"][0].__setitem__(
+                "description", "Read /tmp/private.txt"
+            ),
+            "local filesystem path",
+        ),
+        (
+            lambda trace: trace["frames"][-1]["organization"]["tasks"][0].__setitem__(
+                "description", r"Read C:\Users\alice\private.txt"
+            ),
+            "local filesystem path",
+        ),
+        (
+            lambda trace: trace["frames"][-1]["organization"]["tasks"][0].__setitem__(
+                "description", r"Read \\server\share\private.txt"
+            ),
+            "local filesystem path",
+        ),
+        (
+            lambda trace: _last_public_event(trace)["payload"].__setitem__(
+                "messages", [{"role": "assistant", "content": "private transcript"}]
+            ),
+            "blocked field",
+        ),
+        (
+            lambda trace: _last_public_event(trace)["payload"].__setitem__(
+                "policy_trace", {"candidate_scores": {"work": 0.9}}
+            ),
+            "blocked field",
+        ),
+        (
+            lambda trace: trace.__setitem__(
+                "evaluation_annotations", {"hidden_tests": ["private evaluator case"]}
+            ),
+            "blocked field",
+        ),
+        (
+            lambda trace: trace["frames"][-1]["organization"]["agents"][0].__setitem__(
+                "local_state", {"apiKey": "test-only-unredacted-value"}
+            ),
+            "blocked field",
+        ),
+        (
+            lambda trace: trace["frames"][-1]["organization"]["agents"][0].__setitem__(
+                "local_state", {"mode": "focused"}
+            ),
+            "must be a string",
+        ),
+        (
+            lambda trace: _last_public_event(trace)["payload"].__setitem__(
+                "metadata", {"label": "untyped container"}
+            ),
+            "unsupported fields",
         ),
     ],
 )
@@ -137,6 +195,31 @@ def test_private_event_and_non_finite_number_are_rejected(tmp_path: Path) -> Non
     invalid["frames"][-1]["organization"]["tasks"][0]["progress_score"] = float("nan")
     with pytest.raises(TraceError, match="non-finite"):
         validate_trace(invalid, verify_digest=False)
+
+
+@pytest.mark.replay
+def test_public_frames_are_single_event_post_event_snapshots(tmp_path: Path) -> None:
+    trace, _ = _run(tmp_path)
+    frame = next(frame for frame in trace["frames"] if frame["events"])
+    second = copy.deepcopy(frame["events"][0])
+    second["event_id"] = "event_duplicate_snapshot"
+    frame["events"].append(second)
+
+    with pytest.raises(TraceError, match="at most one post-event snapshot event"):
+        validate_trace(_resign(trace))
+
+
+@pytest.mark.replay
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("actor_id", "ghost_agent"), ("object_ids", ["ghost_object"])],
+)
+def test_public_event_references_must_resolve(tmp_path: Path, field: str, value) -> None:
+    trace, _ = _run(tmp_path)
+    _last_public_event(trace)[field] = value
+
+    with pytest.raises(TraceError, match="references an unpublished object"):
+        validate_trace(_resign(trace))
 
 
 @pytest.mark.integration

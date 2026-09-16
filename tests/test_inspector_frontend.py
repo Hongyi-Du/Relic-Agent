@@ -39,6 +39,8 @@ def test_frontend_is_local_dom_safe_and_exposes_required_panels() -> None:
     assert "https://" not in combined
     assert "private reflection text and memory are never exported" in javascript.lower()
     assert "absence is not interpreted as zero" in javascript.lower()
+    assert "do not establish causal attribution" in javascript.lower()
+    assert "not a powered participant evaluation" in javascript.lower()
     assert ".event:focus-visible" in css
     assert ".table-scroller" in css
 

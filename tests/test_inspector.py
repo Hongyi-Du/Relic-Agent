@@ -48,9 +48,10 @@ def _request(
     path: str,
     *,
     method: str = "GET",
+    headers: dict[str, str] | None = None,
 ) -> tuple[int, dict[str, str], bytes]:
     connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
-    connection.request(method, path)
+    connection.request(method, path, headers=headers or {})
     response = connection.getresponse()
     body = response.read()
     headers = {key.lower(): value for key, value in response.getheaders()}
@@ -91,6 +92,7 @@ def test_inspector_serves_only_allowlisted_routes_with_security_headers(tmp_path
 
         assert _request(server, "/../pyproject.toml")[0] == 404
         assert _request(server, "/api/unknown")[0] == 404
+        assert _request(server, "/api/trace", headers={"Host": "rebind.example"})[0] == 400
         status, method_headers, _ = _request(server, "/api/trace", method="POST")
         assert status == 405
         assert method_headers["allow"] == "GET, HEAD"
@@ -102,6 +104,8 @@ def test_inspector_serves_only_allowlisted_routes_with_security_headers(tmp_path
 @pytest.mark.replay
 def test_live_inspector_keeps_last_verified_append_only_trace(tmp_path: Path) -> None:
     full, trace_path = _generated_trace(tmp_path)
+    full["frames"][0]["organization"]["tasks"][0]["progress_score"] = 1
+    _resign(full)
     prefix = copy.deepcopy(full)
     prefix["frames"] = prefix["frames"][:3]
     trace_path.write_text(json.dumps(_resign(prefix)), encoding="utf-8")
@@ -128,6 +132,13 @@ def test_live_inspector_keeps_last_verified_append_only_trace(tmp_path: Path) ->
         trace_path.write_text(json.dumps(_resign(rewritten)), encoding="utf-8")
         retained = json.loads(_request(server, "/api/trace")[2])
         assert retained["trace_sha256"] == full["trace_sha256"]
+        assert json.loads(_request(server, "/api/health")[2])["status"] == "degraded"
+
+        type_rewritten = copy.deepcopy(full)
+        type_rewritten["frames"][0]["organization"]["tasks"][0]["progress_score"] = 1.0
+        trace_path.write_text(json.dumps(_resign(type_rewritten)), encoding="utf-8")
+        retained = json.loads(_request(server, "/api/trace")[2])
+        assert retained["frames"][0]["organization"]["tasks"][0]["progress_score"] == 1
         assert json.loads(_request(server, "/api/health")[2])["status"] == "degraded"
 
 
