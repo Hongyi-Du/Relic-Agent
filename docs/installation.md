@@ -26,6 +26,8 @@ the test/lint tools. A normal user installation may omit `--extra dev`.
 | Variable | Required | Default | Purpose |
 |---|---:|---|---|
 | `RELIC_AGENT_OUTPUT_ROOT` | No | `outputs` | Default parent directory for new runs |
+| `RELIC_AGENT_UID` | Docker only | `1000` | Host UID used by the Compose service |
+| `RELIC_AGENT_GID` | Docker only | `1000` | Host GID used by the Compose service |
 
 The CLI loads a repository-local `.env` file when present. Explicit
 `--output-root` takes precedence over the environment variable.
@@ -37,8 +39,19 @@ those components are implemented and validated.
 
 Native Windows Python is not a supported runtime path. Enter WSL2, clone into
 the WSL filesystem, and run the same commands shown above. PowerShell launchers
-will be added as thin WSL wrappers in a later milestone; they will not contain
-separate runtime logic.
+under `scripts/powershell/` are thin wrappers around the Bash/Python path; they
+do not contain separate runtime logic.
+
+From Windows PowerShell, point the wrapper at the WSL-side clone:
+
+```powershell
+$env:RELIC_AGENT_WSL_REPO = "/home/<user>/relic-agent"
+.\scripts\powershell\check_wsl.ps1 -Distro Ubuntu
+.\scripts\powershell\smoke.ps1 -Distro Ubuntu
+```
+
+The scripts have been parser-tested with PowerShell 7.6.6. A Windows-host to
+WSL end-to-end fresh-clone run remains part of the release checklist.
 
 ## 中文
 

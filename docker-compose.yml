@@ -1,0 +1,14 @@
+services:
+  relic-agent-runtime:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: relic-agent:local
+    init: true
+    user: "${RELIC_AGENT_UID:-1000}:${RELIC_AGENT_GID:-1000}"
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./outputs:/data/runs
+    command: ["run-default", "--output-root", "/data/runs"]

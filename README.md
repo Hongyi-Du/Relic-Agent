@@ -10,8 +10,9 @@ governance, protocol lifecycles, and auditable replay.
 
 This repository is currently in its first P1 extraction milestone. The
 deterministic mock runtime, default/minimal organizations, public trace contract,
-and replay CLI are implemented. Live model providers, the public Inspector,
-Docker, and WSL launch wrappers remain release work and are not claimed here.
+replay CLI, Docker path, and Linux/WSL/PowerShell thin wrappers are implemented.
+Live model providers and the public Inspector remain release work and are not
+claimed here.
 
 ## Quickstart
 
@@ -26,6 +27,18 @@ uv run relic-agent smoke
 uv run relic-agent run-minimal
 uv run relic-agent run-default
 uv run relic-agent replay-example
+```
+
+Equivalent Bash wrappers are available under `scripts/bash/`.
+
+Docker quickstart:
+
+```bash
+mkdir -p outputs
+docker compose build relic-agent-runtime
+docker compose run --rm relic-agent-runtime check-env
+docker compose run --rm relic-agent-runtime smoke --output-root /data/runs
+docker compose run --rm relic-agent-runtime run-default --output-root /data/runs
 ```
 
 The smoke and bundled replay make zero provider calls. Runs are written below
@@ -67,7 +80,8 @@ out-of-range scores, and unsupported providers are rejected before a run starts.
 
 See [installation](docs/installation.md),
 [configuration](docs/configuration.md), and
-[architecture](docs/architecture.md) for the current supported surface.
+[Docker](docs/docker.md), and [architecture](docs/architecture.md) for the
+current supported surface.
 
 ## Platform support
 
@@ -75,8 +89,8 @@ See [installation](docs/installation.md),
 |---|---|---|
 | Linux | Full for this milestone | Native Python CLI |
 | Windows 11 + WSL2 | Full for this milestone | WSL2 + Python CLI |
-| Windows native PowerShell | Not yet released | Use WSL2 directly |
-| Docker on Linux / Docker Desktop | Not yet released | Planned P1 milestone |
+| Windows native PowerShell | Launcher only | PowerShell invokes WSL2 |
+| Docker on Linux / Docker Desktop | Full for this milestone | Linux container |
 | macOS | Best effort | Native CLI if checks pass |
 
 ## 中文说明
@@ -101,6 +115,7 @@ uv run relic-agent replay-example
 ```
 
 Windows 用户的正式路径是 **Windows → WSL2 → Linux runtime**。当前尚未完成
-新版 Inspector、Docker、PowerShell/WSL wrapper 和 live model provider，因此本
-阶段不承诺这些入口。它们会在后续 P1 阶段完成并经过 fresh-clone 验收后再进入
-公开发布口径。
+新版 Inspector 和 live model provider，因此本阶段不承诺这两项。Docker、Bash
+wrapper 已实机验证；PowerShell wrapper 已通过 PowerShell 7.6.6 语法和转发契约
+测试，但 Windows 宿主到 WSL 的端到端流程仍要在发布前做一次人工 fresh-clone
+验收。
