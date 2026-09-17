@@ -37,6 +37,23 @@ quorum checks, review latency, successful amendment and retirement, and registry
 identity preservation. Ruff and `git diff --check` passed. Socket tests ran with
 local socket access; restricted-sandbox socket errors are not provider failures.
 
+A clean local clone of implementation commit `eccde06` built a wheel, which was
+installed with its declared dependencies in a new Python 3.12 virtualenv.
+All commands below ran outside the repository, importing the installed package:
+
+- `init → validate → run → replay`: two agents, one completed task, 12 ticks;
+- `run-default`: eight agents, three completed tasks, 72 ticks, three episodes,
+  24 reflections, two wishes, five proposals, and one adopted protocol;
+- `run-source-b3 --ticks 12`: the installed compatibility preset completed;
+- `inspect`: the installed localhost server served its UI and trace API with
+  the generated eight agents and three tasks; the temporary server was stopped.
+
+The 12-tick installed source run checks packaging and startup. The full 336-tick
+source conformance evidence comes from the test suite above. Offline providers
+are deterministic fixtures, so completed example work is not evidence of live
+model quality. Initial dependency installation needed network access because a
+required wheel was absent from the local cache; model access was unnecessary.
+
 P2 items—distributed execution, plugin sandboxing, hosted services, signed
 artifacts, supply-chain certification, and historical-run reconstruction—are
 outside this stage.
