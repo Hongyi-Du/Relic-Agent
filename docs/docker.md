@@ -29,8 +29,10 @@ docker compose up relic-inspector
 ```
 
 Generated run directories appear under host `./outputs`. Removing a container
-does not remove those runs. The `relic-inspector` service publishes the bundled
-boundary replay sample at `http://127.0.0.1:${RELIC_AGENT_INSPECTOR_PORT:-8765}`. Its host-side
+does not remove those runs. `smoke`, `run-minimal`, and `run-default` all use
+the same source-native `OrgWorld` host; `run-default` is the canonical 72-tick
+workflow path. The `relic-inspector` service publishes the bundled public
+replay sample at `http://127.0.0.1:${RELIC_AGENT_INSPECTOR_PORT:-8765}`. Its host-side
 mapping remains loopback-only even though the process binds all interfaces
 inside the isolated container.
 

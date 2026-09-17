@@ -11,6 +11,7 @@ from relic_agent.config import load_config
 from relic_agent.core.hashing import canonical_sha256
 from relic_agent.inspector import InspectorError, create_inspector_server
 from relic_agent.runtime import OrganizationRuntime
+from environments.org_env.backend.simulation import OrgWorld
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -151,19 +152,23 @@ def test_live_inspector_keeps_last_verified_append_only_trace(tmp_path: Path) ->
 
 
 @pytest.mark.integration
-def test_live_inspector_observes_an_active_runtime(tmp_path: Path) -> None:
+def test_live_inspector_observes_an_active_source_runtime(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     runtime = OrganizationRuntime(load_config(ROOT / "configs" / "minimal.yaml"))
     paused = threading.Event()
     resume = threading.Event()
-    original_tick = runtime._advance_trace_tick
+    original_step = OrgWorld.step
 
-    def gated_tick() -> None:
-        if runtime.state.tick == 2 and not paused.is_set():
+    def gated_step(world: OrgWorld) -> None:
+        # Wait before tick two, after the first real source step and its public
+        # atomic trace publication.  No compatibility clock is involved.
+        if world.world_tick == 1 and not paused.is_set():
             paused.set()
             assert resume.wait(timeout=5)
-        original_tick()
+        original_step(world)
 
-    runtime._advance_trace_tick = gated_tick
+    monkeypatch.setattr(OrgWorld, "step", gated_step)
     run_thread = threading.Thread(
         target=lambda: runtime.run(output_root=tmp_path, ticks=3, run_id="active-live"),
         daemon=True,

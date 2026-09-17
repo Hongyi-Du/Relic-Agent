@@ -18,6 +18,8 @@ COPY configs ./configs
 COPY examples ./examples
 COPY relic_agent ./relic_agent
 COPY organization_core ./organization_core
+COPY agent_sdk ./agent_sdk
+COPY environments ./environments
 
 RUN uv sync --frozen --no-dev --no-editable \
     && mkdir -p /data/runs \

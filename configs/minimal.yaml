@@ -1,44 +1,15 @@
-schema_version: relic-agent-config-v1
+schema_version: relic-agent-source-native-v1
 organization:
-  id: minimal-organization
-  name: Relic Minimal Organization
+  id: relic-source-native-smoke
+  name: Relic Source-Native Smoke Organization
 
-agents:
-  - id: builder
-    display_name: Builder
-    role: engineer
-    profile:
-      curiosity: 0.8
-      ownership_drive: 0.9
-      process_commitment: 0.6
-    skills:
-      implementation: 0.9
-    tools: [task_board]
-  - id: reviewer
-    display_name: Reviewer
-    role: reviewer
-    profile:
-      process_commitment: 0.9
-      quality_bar: 0.9
-      conformity: 0.8
-    skills:
-      review: 0.9
-    tools: [task_board]
-
-tasks:
-  - id: task_demo
-    title: Complete the demo deliverable
-    description: Produce and review one organization-owned deliverable.
-    priority: 5
-    owner: builder
-    required_skills: [implementation]
-
-governance:
-  min_approvers: 2
-  review_ticks: 3
-
+# A short no-provider-cost run of the same real B3 host.  It intentionally
+# does not pretend that a generic two-agent YAML can be translated into the
+# source world without changing its behavior.
 runtime:
+  scenario: org_default
+  baseline: b3
   seed: 7
-  ticks: 10
-  provider: mock
-  reflection_interval: 3
+  ticks: 12
+  profile_causality: source_recorded
+  capability_transfer: {}

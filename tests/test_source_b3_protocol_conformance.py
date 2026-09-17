@@ -5,11 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 
 from organization_core import OrganizationEventType
-from relic_agent.config import load_config
 from relic_agent.source_b3.protocol_lifecycle import (
     SourceB3ProtocolLifecycleAdapter,
     SourceB3ProtocolLifecycleUnavailableError,
@@ -30,6 +30,17 @@ from relic_agent.source_core import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _archived_projection_config(*agent_ids: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        organization_id="archived-projection",
+        runtime=SimpleNamespace(seed=7),
+        agents=tuple(
+            SimpleNamespace(agent_id=agent_id, role="member", profile={}, skills={})
+            for agent_id in agent_ids
+        ),
+    )
 
 
 def _blob_id(path: str) -> str:
@@ -118,7 +129,7 @@ def test_source_b3_lifecycle_rejects_non_source_review_latency() -> None:
 @pytest.mark.unit
 def test_source_b3_lifecycle_projects_adoption_to_the_core_host_boundary() -> None:
     bridge = SourceCoreObservationBridge.from_config(
-        load_config(ROOT / "configs" / "minimal.yaml"),
+        _archived_projection_config("builder", "reviewer"),
         run_id="source-b3-protocol-boundary",
     )
     adapter = SourceB3ProtocolLifecycleAdapter()

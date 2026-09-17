@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 
 from organization_core import OrganizationEventType
-from relic_agent.config import load_config
 from relic_agent.core import (
     SOURCE_CORE_COMMIT,
     SOURCE_CORE_FILE_BLOBS,
@@ -23,6 +23,17 @@ from relic_agent.source_core import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _archived_projection_config(*agent_ids: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        organization_id="archived-projection",
+        runtime=SimpleNamespace(seed=7),
+        agents=tuple(
+            SimpleNamespace(agent_id=agent_id, role="member", profile={}, skills={})
+            for agent_id in agent_ids
+        ),
+    )
 
 SOURCE_CORE_TEST_FILE_BLOBS = {
     "tests/organization_core/test_approval.py": "e6ea8a9dd2d3b88b7917d733d3053e2b2a09ea8d",
@@ -74,7 +85,7 @@ def test_vendored_source_core_and_direct_tests_are_byte_exact() -> None:
 @pytest.mark.unit
 def test_bridge_observes_only_source_core_envelopes_and_fails_closed_for_hci() -> None:
     bridge = SourceCoreObservationBridge.from_config(
-        load_config(ROOT / "configs" / "minimal.yaml"),
+        _archived_projection_config("builder"),
         run_id="source-core-test",
     )
     legacy = Event(

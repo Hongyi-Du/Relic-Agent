@@ -60,7 +60,7 @@ WSL end-to-end fresh-clone run remains part of the release checklist.
 ## 中文
 
 要求 Python 3.12+ 和 `uv`。Windows 用户请在 WSL2 的 Linux 文件系统中 clone，
-不要长期在 `/mnt/c` 下运行。当前 mock runtime 不需要 API key，也不需要 GPU。
+不要长期在 `/mnt/c` 下运行。当前 source-native B3 runtime 不需要 API key，也不需要 GPU。
 
 ```bash
 uv sync --extra dev --frozen

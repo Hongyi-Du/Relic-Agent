@@ -3,12 +3,12 @@ from __future__ import annotations
 
 from pathlib import Path
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 
 from relic_agent.governance.models import Proposal, ToolSpec
 from relic_agent.governance import GovernanceManager
-from relic_agent.config import load_config
 from relic_agent.source_b3.proposals.families import classify_family
 from relic_agent.source_b3.proposals.manager import (
     MAX_ACTIVE_TOOLS_PER_FAMILY,
@@ -28,6 +28,17 @@ from relic_agent.source_core import SourceCoreObservationBridge
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _archived_projection_config(*agent_ids: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        organization_id="archived-projection",
+        runtime=SimpleNamespace(seed=7),
+        agents=tuple(
+            SimpleNamespace(agent_id=agent_id, role="member", profile={}, skills={})
+            for agent_id in agent_ids
+        ),
+    )
 
 
 def _blob_id(path: str) -> str:
@@ -112,7 +123,7 @@ def test_source_family_depth_and_deterministic_dedup_behaviors_are_preserved() -
 @pytest.mark.unit
 def test_source_proposal_materialization_projects_the_existing_source_registry() -> None:
     bridge = SourceCoreObservationBridge.from_config(
-        load_config(ROOT / "configs" / "minimal.yaml"),
+        _archived_projection_config("paul", "victor"),
         run_id="source-proposal-projection",
     )
     manager = GovernanceManager(

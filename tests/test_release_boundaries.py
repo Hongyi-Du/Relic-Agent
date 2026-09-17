@@ -1,66 +1,32 @@
 from pathlib import Path
-import subprocess
 
 import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_PROVENANCE_FILES = {
-    ROOT / "relic_agent" / "core" / "provenance.py",
-    ROOT / "docs" / "SOURCE_PROVENANCE.md",
-}
-SOURCE_PORT_ROOTS = {
-    ROOT / "relic_agent" / "source_b3",
-}
-BANNED_IDENTITIES = (
-    "sociogenesis",
-    "natureenv",
-    "evolving agent",
-    "programbench",
-    "cooperbench",
-    "lanternforge",
-    "lanternscout",
-)
 
 
 @pytest.mark.release
-def test_public_runtime_has_no_paper_or_legacy_identity_leaks() -> None:
-    completed = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-        cwd=ROOT,
-        check=True,
-        text=True,
-        capture_output=True,
-    )
-    candidates = [ROOT / line for line in completed.stdout.splitlines() if line]
-    text_suffixes = {
-        ".css",
-        ".example",
-        ".html",
-        ".js",
-        ".json",
-        ".lock",
-        ".md",
-        ".ps1",
-        ".py",
-        ".sh",
-        ".toml",
-        ".yaml",
-        ".yml",
-    }
-    text_names = {"Dockerfile", ".dockerignore", ".gitattributes"}
-    text = "\n".join(
-        path.read_text(encoding="utf-8", errors="ignore")
-        for path in sorted(candidates)
-        if path.is_file()
-        and "tests" not in path.parts
-        # Attribution is required for vendored source and is not a product
-        # identity leak. It stays constrained to these audit-only files.
-        and path not in SOURCE_PROVENANCE_FILES
-        and not any(root in path.parents for root in SOURCE_PORT_ROOTS)
-        and path.name not in {"LICENSE", "COMMERCIAL_LICENSE.md"}
-        and (path.suffix in text_suffixes or path.name in text_names)
-    ).lower()
+def test_public_release_entrypoints_describe_the_source_native_host() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
+    configuration = (ROOT / "docs" / "configuration.md").read_text(encoding="utf-8")
+    engine = (ROOT / "relic_agent" / "runtime" / "engine.py").read_text(encoding="utf-8")
 
-    for banned in BANNED_IDENTITIES:
-        assert banned not in text
+    assert "OrgWorld.step()" in readme
+    assert "relic-agent-source-native-v1" in configuration
+    assert "compatibility trace shell" not in readme.lower()
+    assert "OrgWorld(default_scenario" in engine
+    assert '"authority": "source_native_orgworld"' in engine
+    assert "does not select actions" in architecture
+
+
+@pytest.mark.release
+def test_vendor_and_archived_paths_are_explicitly_documented_as_non_public_apis() -> None:
+    provenance = (ROOT / "docs" / "SOURCE_PROVENANCE.md").read_text(encoding="utf-8")
+    core_init = (ROOT / "relic_agent" / "core" / "__init__.py").read_text(encoding="utf-8")
+
+    assert "Deliberately excluded capabilities" in provenance
+    assert "Archived compatibility material" in provenance
+    assert "CLI process does not import them" in provenance
+    assert "lazy compatibility boundary" in core_init

@@ -7,8 +7,8 @@ private reflection text.
 
 ## Start a replay
 
-The bundled boundary sample is a digest-valid empty public trace and makes no
-model call. It demonstrates the Inspector interface, not an organization run:
+The bundled replay is a digest-valid static public sample and makes no model
+call. It demonstrates the Inspector interface, not an organization run:
 
 ```bash
 uv run relic-agent inspect-example
@@ -80,11 +80,10 @@ The loader rejects the trace unless all of the following hold:
 Opaque reflection and wish identifiers may remain on a public proposal to show
 lineage. They do not provide a route to the private reflection content.
 
-The current compatibility runtime does not manufacture either identifier: its
-source reflection lifecycle remains unbound until a terminal HCI episode,
-mounted HCI `OrgWorld`, and OpenAI-compatible source provider are supplied.
-Inspector therefore cannot display a synthetic reflection or wish for a normal
-Relic Agent smoke run.
+The source-native runtime can create source reflections and wishes as its real
+lifecycle reaches them. Inspector can show only the public lineage that the
+trace explicitly publishes; it never displays raw reflection/wish text,
+prompts, provider messages, or private memory.
 
 ## Interaction model
 

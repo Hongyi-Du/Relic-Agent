@@ -18,6 +18,7 @@ from relic_agent.config import ConfigError, load_config
 from relic_agent.inspector import inspector_static_root, serve_inspector
 from relic_agent.replay import load_trace
 from relic_agent.runtime import OrganizationRuntime
+from relic_agent.source_host import verify_critical_vendor_blobs
 
 
 def _source_root() -> Path:
@@ -127,11 +128,24 @@ def _environment_report(config_path: Path | None) -> dict:
                 },
             }
         )
+    blob_verification = verify_critical_vendor_blobs()
+    checks.append(
+        {
+            "name": "source_host_blobs",
+            "status": "pass" if blob_verification["verified"] else "fail",
+            "details": {
+                "source_commit": blob_verification["source_commit"],
+                "mismatch_count": len(blob_verification["mismatches"]),
+            },
+        }
+    )
     checks.append(
         {
             "name": "provider_credentials",
             "status": "skip",
-            "details": {"reason": "mock provider does not require credentials"},
+            "details": {
+                "reason": "source-native deterministic host does not require provider credentials"
+            },
         }
     )
     try:
@@ -250,7 +264,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             raise AssertionError(f"unhandled command: {args.command}")
         print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
-    except (ConfigError, FileNotFoundError, ValueError, OSError) as exc:
+    except (ConfigError, FileNotFoundError, RuntimeError, ValueError, OSError) as exc:
         print(f"relic-agent: {exc}", file=sys.stderr)
         return 2
 

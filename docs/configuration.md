@@ -1,53 +1,41 @@
-# Organization configuration
+# Source-native configuration
 
-The public schema is `relic-agent-config-v1`. The two canonical examples are:
+The only supported schema is `relic-agent-source-native-v1`:
 
-- `configs/minimal.yaml`: two members and one task;
-- `configs/default.yaml`: four members and three tasks, including the public
-  default display name **Los Xi**.
+```yaml
+schema_version: relic-agent-source-native-v1
+organization:
+  id: relic-default-organization
+  name: Relic Default Organization
+runtime:
+  scenario: org_default
+  baseline: b3
+  seed: 42
+  ticks: 72
+  profile_causality: source_recorded
+  capability_transfer: {}
+```
 
-Top-level fields are strict:
+The configuration does not define a roster, tasks, governance rules, model
+provider, or action policy. Those belong to the source `OrgWorld`; accepting a
+generic YAML and translating it would create a different runtime. Unknown
+fields, another scenario, another baseline, non-empty capability transfer, or
+a non-source profile intervention fail before execution.
 
-| Field | Purpose |
-|---|---|
-| `organization` | Stable organization ID and display name |
-| `agents` | Persistent member ID, display name, role, profile, skills, and tools |
-| `tasks` | Work items, priorities, optional owners, and required skills |
-| `governance` | Source-fixed distinct-approver floor and review latency |
-| `runtime` | Seed, tick count, provider, and a legacy reflection-interval field |
+`baseline` accepts `b3`, `full`, or `sociogenesis` only as aliases for the
+same shipped B3 source default. It does not select an arbitrary upstream
+branch. `profile_causality: source_recorded` is descriptive and no custom
+causal injection is allowed. The effective provider is always `source_native`;
+the default local lifecycle makes zero model-provider calls.
 
-Profile and skill values are bounded to `[0, 1]`. IDs must be unique, and task
-owners must reference declared agents. The current milestone intentionally
-accepts only `provider: mock`; an unknown or unqualified live provider fails
-before execution.
+## Output location
 
-`runtime.reflection_interval` remains accepted for backwards-compatible config
-loading, but is intentionally ignored by the mock release shell. Source
-reflection has the HCI batch cadence and only activates with a terminal source
-episode, mounted HCI `OrgWorld`, and OpenAI-compatible source provider.
+The output-root precedence is:
 
-`governance.min_approvers` must be `2`, the pinned source proposal manager's
-distinct-approver floor. `governance.review_ticks` must be `3`, the pinned
-source lifecycle latency. Another value is rejected during config loading
-rather than producing a nearby-but-different proposal/protocol lifecycle.
+1. CLI `--output-root`;
+2. `RELIC_AGENT_OUTPUT_ROOT` from the environment or `.env`;
+3. `outputs`.
 
-## Configuration precedence
-
-For the currently exposed output location:
-
-1. explicit CLI `--output-root`;
-2. `RELIC_AGENT_OUTPUT_ROOT` loaded from the environment or `.env`;
-3. repository default `outputs`.
-
-Organization semantics come from the explicit YAML snapshot. Shell, future
-PowerShell, and Docker entrypoints must call the same Python CLI and must not
-carry their own hidden defaults.
-
-Inspector configuration follows the same explicit-boundary rule:
-
-1. CLI `--host`, `--port`, and `--mode`;
-2. the CLI defaults `127.0.0.1`, `8765`, and `replay`.
-
-`RELIC_AGENT_INSPECTOR_PORT` configures only the host-side Compose port mapping;
-it does not silently override a native CLI argument. Remote binding requires
-the separate `--allow-remote` acknowledgement.
+Every launcher invokes the same Python CLI. Inspector host/port/mode are also
+explicit flags; Compose's `RELIC_AGENT_INSPECTOR_PORT` affects only its host
+port mapping. A non-loopback Inspector bind needs `--allow-remote`.

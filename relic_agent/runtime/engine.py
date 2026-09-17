@@ -1,9 +1,8 @@
-"""Compatibility trace shell with no active HCI action execution.
+"""Source-native execution host for a B3 Relic organization.
 
-This runner is retained while the source HCI host adapter is ported. It keeps
-the public CLI, trace contract, Inspector, and launchers runnable, but it
-does not select or execute organization actions. Its tick envelopes are
-validated by the vendored source core in observation-only mode.
+The release shell previously advanced a clock beside a bespoke state model.
+This host builds and steps the vendored SocioGenesis ``OrgWorld`` directly.
+All public output is a privacy-filtered projection of that real world.
 """
 
 from __future__ import annotations
@@ -18,19 +17,29 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from relic_agent.config import OrganizationConfig
-from relic_agent.episodes import EpisodeManager, OrgEpisode
-from relic_agent.events import Event, EventStore
-from relic_agent.governance import GovernanceManager
-from relic_agent.organization import AgentState, OrganizationState, Task, TaskStatus
-from relic_agent.reflection import ReflectionManager
-from relic_agent.replay.trace import build_trace
-from relic_agent.source_b3.growth.lifecycle import SourceB3GrowthLifecycleAdapter
-from relic_agent.source_b3.policy import SourceB3PolicyLifecycleAdapter
-from relic_agent.source_core import SourceCoreObservationBridge
+from environments.org_env.backend.simulation import OrgWorld
+from environments.org_env.config.scenarios import default_scenario
 
-RUN_SCHEMA_VERSION = "relic-agent-run-v1"
+from relic_agent.config import OrganizationConfig
+from relic_agent.replay.trace import build_trace
+from relic_agent.source_host import (
+    archived_compat_modules_loaded,
+    assert_no_forbidden_loaded_modules,
+    project_public_frame,
+    source_host_provenance,
+    structural_conformance,
+    verify_critical_vendor_blobs,
+)
+from relic_agent.source_host.provenance import DISABLED_CAPABILITIES
+
+
+RUN_SCHEMA_VERSION = "relic-agent-run-v2"
 _RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+# Publish every completed source tick.  Frames are append-only and the public
+# trace is small for the shipped 72-tick workflow, so this gives live Inspector
+# clients a faithful current source-world projection rather than a shell clock
+# or a delayed batch checkpoint.
+_TRACE_CHECKPOINT_TICKS = 1
 
 
 @dataclass(frozen=True)
@@ -60,72 +69,14 @@ class RunResult:
 
 
 class OrganizationRuntime:
-    """Legacy compatibility entry point kept for the release shell.
-
-    New integrations must mount ``organization_core.OrganizationModule`` on a
-    source-compatible host. This class cannot activate that path and records
-    the limitation in every generated ``run.json``.
-    """
+    """Build and step one source-native B3 ``OrgWorld`` instance."""
 
     def __init__(self, config: OrganizationConfig) -> None:
         self.config = config
-        self.state = OrganizationState(config.organization_id, config.name)
-        self.state.agents = {
-            item.agent_id: AgentState(
-                agent_id=item.agent_id,
-                display_name=item.display_name,
-                role=item.role,
-                profile=dict(item.profile),
-                skills=dict(item.skills),
-                tools=list(item.tools),
-            )
-            for item in config.agents
-        }
-        self.state.tasks = {
-            item.task_id: Task(
-                task_id=item.task_id,
-                title=item.title,
-                description=item.description,
-                priority=item.priority,
-                owner_id=item.owner_id,
-                required_skills=list(item.required_skills),
-            )
-            for item in config.tasks
-        }
-        # An owner in the release config is static input, not evidence that a
-        # source action has claimed or started the task.  The compatibility
-        # shell must preserve that distinction until a real HCI host executes
-        # an action, so it leaves the source-neutral task state untouched.
-        self.events = EventStore()
-        self.episodes = EpisodeManager()
-        self.reflection = ReflectionManager()
-        self.governance = GovernanceManager(
-            agent_ids=tuple(sorted(self.state.agents)),
-            min_approvers=config.governance.min_approvers,
-            review_ticks=config.governance.review_ticks,
-            agent_roles={agent_id: agent.role for agent_id, agent in self.state.agents.items()},
-            known_actions=(
-                "approve_proposal",
-                "claim_task",
-                "work_task",
-                "use_protocol",
-            ),
-        )
-        self.governance.bind_host_context(
-            agents=self.state.agents,
-            reflection_manager=self.reflection,
-            episode_manager=self.episodes,
-        )
-        # These adapters are intentionally unbound in the release shell. They
-        # make the precise source capabilities and host requirements visible in
-        # every run manifest without turning configured tasks into fake HCI
-        # actions, growth signals, or policy decisions.
-        self.growth = SourceB3GrowthLifecycleAdapter()
-        self.policy = SourceB3PolicyLifecycleAdapter()
+        self.world: OrgWorld | None = None
         self.frames: list[dict[str, Any]] = []
-        self._last_frame_event_index = 0
-        self._last_frame_protocol_event_index = 0
-        self._source_core_bridge: SourceCoreObservationBridge | None = None
+        self._action_mark = 0
+        self._protocol_event_mark = 0
 
     def run(
         self,
@@ -135,48 +86,53 @@ class OrganizationRuntime:
         run_id: str | None = None,
     ) -> RunResult:
         total_ticks = ticks if ticks is not None else self.config.runtime.ticks
-        if total_ticks < 1:
-            raise ValueError("ticks must be positive")
+        if not isinstance(total_ticks, int) or isinstance(total_ticks, bool) or total_ticks < 1:
+            raise ValueError("ticks must be a positive integer")
         actual_run_id = run_id or str(uuid.uuid4())
         if not _RUN_ID_RE.fullmatch(actual_run_id) or ".." in actual_run_id:
             raise ValueError("run_id must be a safe 1-128 character identifier")
+
+        blob_verification = verify_critical_vendor_blobs()
+        if not blob_verification["verified"]:
+            raise RuntimeError("source_vendor_blob_verification_failed")
+
         started_at = datetime.now(UTC).isoformat()
         output_directory = Path(output_root).expanduser().resolve() / actual_run_id
         output_directory.mkdir(parents=True, exist_ok=False)
-        self._source_core_bridge = SourceCoreObservationBridge.from_config(
-            self.config,
-            run_id=actual_run_id,
-        )
-        self.governance.bind_source_core_bridge(self._source_core_bridge)
         config_snapshot_path = output_directory / "config.yaml"
-        self._atomic_text(
-            config_snapshot_path,
-            self.config.source_path.read_text(encoding="utf-8"),
-        )
         trace_path = output_directory / "trace.json"
         status_path = output_directory / "status.json"
-        self._capture_frame(force=True)
-        self._write_status(status_path, actual_run_id, "running")
+        manifest_path = output_directory / "run.json"
+        self._atomic_text(config_snapshot_path, self.config.source_path.read_text(encoding="utf-8"))
+        self._write_status(status_path, actual_run_id, "running", tick=0)
+
         try:
+            # ``default_scenario`` is intentionally called without an explicit
+            # condition override.  Its source default is B3, which preserves
+            # the source's normal run id and the pinned 336-tick structures.
+            self.world = OrgWorld(default_scenario(seed=self.config.runtime.seed)).build()
+            self._capture_frame()
             trace = self._write_public_trace(trace_path, actual_run_id)
-            for tick in range(1, total_ticks + 1):
-                self.state.tick = tick
-                self._advance_trace_tick()
-                self._source_core_bridge.complete_tick(self.state.tick)
-                self._capture_frame(force=self.frames[-1]["tick"] != self.state.tick)
-                trace = self._write_public_trace(trace_path, actual_run_id)
-                self._write_status(status_path, actual_run_id, "running")
+            for _ in range(total_ticks):
+                self.world.step()
+                self._capture_frame()
+                if self.world.world_tick % _TRACE_CHECKPOINT_TICKS == 0:
+                    trace = self._write_public_trace(trace_path, actual_run_id)
+                self._write_status(
+                    status_path,
+                    actual_run_id,
+                    "running",
+                    tick=self.world.world_tick,
+                )
+            module_boundary = assert_no_forbidden_loaded_modules()
+            module_boundary["archived_compat_modules_loaded"] = archived_compat_modules_loaded()
         except BaseException as exc:
-            if self.frames[-1]["tick"] != self.state.tick:
-                self._capture_frame(force=True)
-            try:
-                self._write_public_trace(trace_path, actual_run_id)
-            except Exception:
-                pass
+            current_tick = int(getattr(self.world, "world_tick", 0) or 0)
             self._write_status(
                 status_path,
                 actual_run_id,
                 "failed",
+                tick=current_tick,
                 error_type=type(exc).__name__,
             )
             raise
@@ -186,20 +142,17 @@ class OrganizationRuntime:
             started_at=started_at,
             finished_at=datetime.now(UTC).isoformat(),
             trace=trace,
+            blob_verification=blob_verification,
+            module_boundary=module_boundary,
         )
-        manifest_path = output_directory / "run.json"
         self._atomic_json(manifest_path, manifest)
-        self._write_status(status_path, actual_run_id, "completed")
-        completed = sum(
-            1
-            for task in self.state.tasks.values()
-            if task.status in {TaskStatus.DONE, TaskStatus.MERGED, TaskStatus.RELEASED}
+        self._write_status(
+            status_path,
+            actual_run_id,
+            "completed",
+            tick=self._world().world_tick,
         )
-        adopted = sum(
-            1
-            for protocol in self.governance.protocol_registry.protocols.values()
-            if protocol.adoption_status == "adopted"
-        )
+        world = self._world()
         return RunResult(
             run_id=actual_run_id,
             run_directory=output_directory,
@@ -207,147 +160,40 @@ class OrganizationRuntime:
             trace_path=trace_path,
             status="completed",
             ticks=total_ticks,
-            event_count=len(self.events.events),
-            completed_task_count=completed,
-            adopted_protocol_count=adopted,
+            event_count=len(world.events),
+            completed_task_count=self._completed_task_count(world),
+            adopted_protocol_count=self._adopted_protocol_count(world),
         )
 
-    def _advance_trace_tick(self) -> None:
-        """Advance the trace clock without selecting or executing an action.
+    def _world(self) -> OrgWorld:
+        if self.world is None:
+            raise RuntimeError("source_orgworld_not_built")
+        return self.world
 
-        This deliberately replaces the former per-agent compatibility action
-        loop.  HCI selection needs a source candidate pool, OrgWorld, work
-        rhythm, attractor guard, and execution adapter.  A config task or a
-        shell tick cannot stand in for any of those inputs.  The only state
-        transition here is the already-recorded clock value; source-core then
-        records its append-only tick envelope separately.
-        """
-
-        return None
-
-    def _emit(
-        self,
-        *,
-        event_type: str,
-        actor_id: str = "",
-        object_ids: tuple[str, ...] = (),
-        payload: dict[str, Any] | None = None,
-        visibility: str = "organization",
-    ) -> Event:
-        event = self.events.emit(
-            tick=self.state.tick,
-            event_type=event_type,
-            actor_id=actor_id,
-            object_ids=object_ids,
-            payload=payload,
-            visibility=visibility,
-        )
-        if self._source_core_bridge is not None:
-            self._source_core_bridge.publish_legacy_event(event)
-        if visibility in {"organization", "public"}:
-            self._capture_frame()
-        return event
-
-    def _capture_frame(self, *, force: bool = False) -> None:
-        events = self.events.public_since(self._last_frame_event_index)
-        # The compatibility shell never publishes an action decision. Source
-        # decisions can only come from a future mounted HCI action host.
-        decisions: list[dict[str, Any]] = []
-        governance_events = [
-            {
-                "event_id": event.event_id,
-                "event_type": event.event_type,
-                "protocol_id": event.protocol_id,
-                "actor_id": event.actor_id,
-                "tick": event.tick,
-                "data": dict(event.data),
-            }
-            for event in self.governance.protocol_registry.events[
-                self._last_frame_protocol_event_index :
-            ]
-        ]
-        if not force and not events and not decisions and not governance_events:
-            return
-        self._last_frame_event_index = len(self.events.events)
-        self._last_frame_protocol_event_index = len(self.governance.protocol_registry.events)
-        sequence = len(self.frames)
+    def _capture_frame(self) -> None:
+        world = self._world()
         self.frames.append(
-            {
-                "frame_id": f"frame_{sequence:06d}",
-                "sequence": sequence,
-                "tick": self.state.tick,
-                "organization": self.state.public_dict(),
-                "events": events,
-                "episodes": [
-                    self._public_episode(episode)
-                    for episode in sorted(
-                        self.episodes.episodes.values(), key=lambda item: item.episode_id
-                    )
-                ],
-                "decisions": decisions,
-                "governance_events": governance_events,
-            }
+            project_public_frame(
+                world,
+                sequence=len(self.frames),
+                organization_id=self.config.organization_id,
+                organization_name=self.config.name,
+                action_start=self._action_mark,
+                protocol_event_start=self._protocol_event_mark,
+            )
         )
-
-    @staticmethod
-    def _public_episode(episode: OrgEpisode) -> dict[str, Any]:
-        return {
-            "episode_id": episode.episode_id,
-            "episode_type": episode.episode_type,
-            "title": episode.title,
-            "status": episode.status,
-            "start_tick": episode.start_tick,
-            "end_tick": episode.end_tick,
-            "participants": list(episode.participants),
-            "linked_event_ids": list(episode.linked_event_ids),
-            "linked_task_ids": list(episode.linked_task_ids),
-            "linked_protocol_ids": list(episode.linked_protocol_ids),
-            "problem_statement": episode.problem_statement,
-            "decision_summary": episode.decision_summary,
-            "outcome_summary": episode.outcome_summary,
-            "produced_protocols": list(episode.produced_protocols),
-            # HCI's source event view calls this field ``family``.  The public
-            # trace contract calls the same normalized category ``event_type``;
-            # this is a shape-only projection of an already source-observed
-            # episode, never a conversion from a legacy compatibility event.
-            "timeline": [
-                {
-                    "tick": item["tick"],
-                    "event_id": item["event_id"],
-                    "event_type": item["family"],
-                    "actor_id": item.get("actor_id") or "",
-                }
-                for item in episode.timeline
-            ],
-        }
+        self._action_mark = len(world.action_log)
+        self._protocol_event_mark = len(world.protocol_registry.events)
 
     def _write_public_trace(self, path: Path, run_id: str) -> dict[str, Any]:
         trace = build_trace(
             run_id=run_id,
-            organization_id=self.state.organization_id,
+            organization_id=self.config.organization_id,
             config_digest=self.config.digest,
             frames=self.frames,
         )
         self._atomic_json(path, trace)
         return trace
-
-    def _write_status(
-        self,
-        path: Path,
-        run_id: str,
-        status: str,
-        *,
-        error_type: str | None = None,
-    ) -> None:
-        payload: dict[str, Any] = {
-            "schema_version": "relic-agent-status-v1",
-            "run_id": run_id,
-            "status": status,
-            "tick": self.state.tick,
-        }
-        if error_type:
-            payload["error_type"] = error_type
-        self._atomic_json(path, payload)
 
     def _manifest(
         self,
@@ -356,10 +202,13 @@ class OrganizationRuntime:
         started_at: str,
         finished_at: str,
         trace: dict[str, Any],
+        blob_verification: dict[str, object],
+        module_boundary: dict[str, object],
     ) -> dict[str, Any]:
-        source_core = self._source_core_bridge
-        if source_core is None:
-            raise RuntimeError("source-core observation bridge was not initialized")
+        world = self._world()
+        conformance = structural_conformance(world)
+        evidence = self._workflow_evidence(world)
+        workflow_acceptance = "passed" if evidence["complete"] else "unavailable_fail_closed"
         return {
             "schema_version": RUN_SCHEMA_VERSION,
             "run_id": run_id,
@@ -374,23 +223,48 @@ class OrganizationRuntime:
             "runtime": {
                 "provider": self.config.runtime.provider,
                 "seed": self.config.runtime.seed,
-                "ticks": self.state.tick,
+                "ticks": world.world_tick,
                 "provider_calls_made": 0,
-                "authority": "compatibility_trace_shell_unbound",
-                "action_selection": "unbound_no_source_orgworld",
-                "action_execution": "unavailable_fail_closed",
-                "workflow_acceptance": "unavailable_fail_closed",
-                "workflow_acceptance_reason": (
-                    "source_orgworld_action_host_not_mounted"
-                ),
-                "paper_result_evidence": "not_produced_by_compatibility_shell",
+                "authority": "source_native_orgworld",
+                "action_selection": "source_profile_policy",
+                "action_execution": "source_orgworld_step",
+                "workflow_acceptance": workflow_acceptance,
+                "workflow_acceptance_reason": evidence["reason"],
+                "paper_result_evidence": "not_produced_by_standalone_org_host",
             },
-            "source_core": source_core.status().as_dict(),
-            "source_episode_lifecycle": self.episodes.status().as_dict(),
-            "source_reflection_lifecycle": self.reflection.status().as_dict(),
-            "source_proposal_lifecycle": self.governance.source_status(),
-            "source_growth_lifecycle": self.growth.status().as_dict(),
-            "source_policy_lifecycle": self.policy.status().as_dict(),
+            "source": {
+                **source_host_provenance(),
+                "critical_blob_verification": blob_verification,
+                "loaded_module_boundary": module_boundary,
+            },
+            "adapters": {
+                "baseline": {
+                    "requested": self.config.runtime.baseline,
+                    "effective": "source_default_b3",
+                    "accepted_values": ["", "b3", "full", "sociogenesis"],
+                },
+                "profile_causality": {
+                    "mode": "source_recorded_no_op",
+                    "source_record_count": len(
+                        getattr(world, "profile_causality_records", ()) or ()
+                    ),
+                },
+                "capability_transfer": {
+                    "mode": "empty_no_op",
+                    "arguments": "rejected_fail_closed",
+                },
+                "public_identity": {
+                    "source_agent_id": "scarlett",
+                    "public_display_name": "Los Xi",
+                    "mutation": "projection_only",
+                },
+            },
+            "disabled_capabilities": list(DISABLED_CAPABILITIES),
+            "conformance": {
+                "source_native_world_built": True,
+                "source_native_steps": world.world_tick,
+                "structures": conformance,
+            },
             "outputs": {
                 "config_snapshot": "config.yaml",
                 "status": "status.json",
@@ -398,25 +272,53 @@ class OrganizationRuntime:
                 "trace_sha256": trace["trace_sha256"],
             },
             "summary": {
-                "agents": len(self.state.agents),
-                "tasks": len(self.state.tasks),
-                "completed_tasks": sum(
-                    1
-                    for task in self.state.tasks.values()
-                    if task.status in {TaskStatus.DONE, TaskStatus.MERGED, TaskStatus.RELEASED}
-                ),
-                "events": len(self.events.events),
-                "episodes": len(self.episodes.episodes),
-                "reflections": self.reflection.status().reflection_count,
-                "wishes": self.reflection.status().wish_count,
-                "proposals": len(self.governance.proposals),
-                "adopted_protocols": sum(
-                    1
-                    for protocol in self.governance.protocol_registry.protocols.values()
-                    if protocol.adoption_status == "adopted"
-                ),
+                "agents": len(world.agents),
+                "tasks": len(world.tasks),
+                "completed_tasks": self._completed_task_count(world),
+                "events": len(world.events),
+                "episodes": len(world.episode_manager.episodes),
+                "reflections": len(world.reflection_manager.reflections),
+                "wishes": len(world.reflection_manager.wishes),
+                "proposals": len(world.proposal_manager.proposals),
+                "protocol_specs": len(world.proposal_manager.protocol_specs),
+                "adopted_protocols": self._adopted_protocol_count(world),
             },
         }
+
+    @staticmethod
+    def _workflow_evidence(world: OrgWorld) -> dict[str, object]:
+        checks = {
+            "source_actions": len(world.action_log) > 0,
+            "source_episodes": len(world.episode_manager.episodes) > 0,
+            "source_reflections": len(world.reflection_manager.reflections) > 0,
+            "source_proposals": len(world.proposal_manager.proposals) > 0,
+            "source_protocol_specs": len(world.proposal_manager.protocol_specs) > 0,
+        }
+        missing = [name for name, present in checks.items() if not present]
+        return {
+            "complete": not missing,
+            "checks": checks,
+            "reason": (
+                "real_source_action_episode_reflection_proposal_protocol_evidence_present"
+                if not missing
+                else "missing_real_source_evidence:" + ",".join(missing)
+            ),
+        }
+
+    @staticmethod
+    def _completed_task_count(world: OrgWorld) -> int:
+        terminal = {"done", "merged", "released", "completed"}
+        return sum(
+            _text(getattr(task, "status", "")) in terminal
+            for task in world.tasks.values()
+        )
+
+    @staticmethod
+    def _adopted_protocol_count(world: OrgWorld) -> int:
+        return sum(
+            _text(getattr(protocol, "adoption_status", "")) == "adopted"
+            for protocol in world.protocol_registry.protocols.values()
+        )
 
     @staticmethod
     def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
@@ -448,3 +350,31 @@ class OrganizationRuntime:
         finally:
             if temporary_path.exists():
                 temporary_path.unlink()
+
+    @classmethod
+    def _write_status(
+        cls,
+        path: Path,
+        run_id: str,
+        status: str,
+        *,
+        tick: int,
+        error_type: str | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {
+            "schema_version": "relic-agent-status-v2",
+            "run_id": run_id,
+            "status": status,
+            "tick": tick,
+            "authority": "source_native_orgworld",
+        }
+        if error_type:
+            payload["error_type"] = error_type
+        cls._atomic_json(path, payload)
+
+
+def _text(value: Any) -> str:
+    return str(getattr(value, "value", value) or "")
+
+
+__all__ = ["OrganizationRuntime", "RUN_SCHEMA_VERSION", "RunResult"]

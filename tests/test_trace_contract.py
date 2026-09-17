@@ -8,6 +8,7 @@ from relic_agent.config import load_config
 from relic_agent.core.hashing import canonical_sha256
 from relic_agent.replay import TraceError, load_trace, validate_trace
 from relic_agent.runtime import OrganizationRuntime
+from environments.org_env.backend.simulation import OrgWorld
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,12 +37,13 @@ def _last_public_event(trace: dict) -> dict:
         if frame["events"]:
             return frame["events"][0]
     frame = trace["frames"][-1]
+    organization = frame["organization"]
     event = {
         "event_id": "event_trace_contract_fixture",
         "tick": frame["tick"],
         "event_type": "public_notice",
-        "actor_id": "builder",
-        "object_ids": ["task_demo"],
+        "actor_id": organization["agents"][0]["agent_id"],
+        "object_ids": [organization["tasks"][0]["task_id"]],
         "payload": {"summary": "Trace-contract fixture event."},
         "visibility": "organization",
     }
@@ -50,7 +52,9 @@ def _last_public_event(trace: dict) -> dict:
 
 
 @pytest.mark.replay
-def test_public_trace_is_tick_synchronized_and_excludes_policy_audit(tmp_path: Path) -> None:
+def test_public_trace_is_tick_synchronized_and_excludes_private_policy_audit(
+    tmp_path: Path,
+) -> None:
     trace, _ = _run(tmp_path)
 
     assert trace["frames"][0]["tick"] == 0
@@ -59,30 +63,25 @@ def test_public_trace_is_tick_synchronized_and_excludes_policy_audit(tmp_path: P
     assert all(frame["events"] == [] for frame in trace["frames"])
 
     decisions = [decision for frame in trace["frames"] for decision in frame["decisions"]]
-    assert decisions == []
+    assert decisions
     serialized = json.dumps(trace, sort_keys=True)
-    for evaluator_only_field in ('"candidates"', '"features"', '"utility"', '"policy"'):
+    for evaluator_only_field in ('"candidate_scores"', '"features"', '"utility"', '"prompt"'):
         assert evaluator_only_field not in serialized
 
-    task = trace["frames"][-1]["organization"]["tasks"][0]
-    assert task["status"] == "open"
-    assert task["history"] == []
+    final = trace["frames"][-1]["organization"]
+    assert final["tasks"]
+    assert all(decision["agent_id"] in {row["agent_id"] for row in final["agents"]} for decision in decisions)
 
 
 @pytest.mark.replay
-def test_public_trace_does_not_project_a_fabricated_governance_relation(tmp_path: Path) -> None:
+def test_public_trace_projects_source_decisions_without_private_ledger_data(
+    tmp_path: Path,
+) -> None:
     trace, _ = _run(tmp_path)
     final = trace["frames"][-1]["organization"]
-    task = final["tasks"][0]
-
-    assert final["proposals"] == []
-    assert final["protocols"] == []
-    assert not any(
-        event["event_type"] == "protocol_adopted"
-        for frame in trace["frames"]
-        for event in frame["events"]
-    )
-    assert not any(row.get("protocol_id") for row in task["history"])
+    assert final["tasks"]
+    assert any(frame["decisions"] for frame in trace["frames"])
+    assert all(event["data"] == {} for frame in trace["frames"] for event in frame["governance_events"])
 
 
 @pytest.mark.replay
@@ -251,18 +250,22 @@ def test_runtime_atomically_publishes_running_trace_and_failure_marker(
     assert load_trace(result.trace_path)["frames"][-1]["tick"] == 3
 
     failing = OrganizationRuntime(config)
+    original_step = OrgWorld.step
 
-    def fail_tick() -> None:
-        raise RuntimeError("sentinel failure")
+    def fail_after_first_source_step(world: OrgWorld) -> None:
+        if world.world_tick >= 1:
+            raise RuntimeError("sentinel failure")
+        original_step(world)
 
-    monkeypatch.setattr(failing, "_advance_trace_tick", fail_tick)
+    monkeypatch.setattr(OrgWorld, "step", fail_after_first_source_step)
     with pytest.raises(RuntimeError, match="sentinel failure"):
-        failing.run(output_root=tmp_path, ticks=1, run_id="failed-live")
+        failing.run(output_root=tmp_path, ticks=2, run_id="failed-live")
     status = json.loads((tmp_path / "failed-live" / "status.json").read_text(encoding="utf-8"))
     assert status == {
+        "authority": "source_native_orgworld",
         "error_type": "RuntimeError",
         "run_id": "failed-live",
-        "schema_version": "relic-agent-status-v1",
+        "schema_version": "relic-agent-status-v2",
         "status": "failed",
         "tick": 1,
     }

@@ -1,197 +1,94 @@
 # Relic Agent
 
-> **Run your own Relic organization.**
+Relic Agent runs the vendored, source-native B3 `OrgWorld` host.  The default
+CLI builds the real source world and calls `OrgWorld.step()`; it is no longer a
+separate clock/trace compatibility runtime.  Public output is a deliberately
+filtered `relic-trace-v1` projection of that world for replay and Inspector.
 
-Relic Agent is a release-facing shell around a source-first organization-core
-extraction. It is not the paper benchmark or a claim of complete B3/HCI
-reproduction. Source-shaped proposals, protocol lifecycle, explicit-input
-event-to-episode lifecycle, and reflection contracts are routed through pinned
-HCI closures; the deterministic shell remains for the CLI, public trace,
-Inspector, Docker path, and clock/trace publication only. It does not claim,
-start, progress, block, complete, select, or execute a configured task.
-
-The source proposal-manager slice accepts externally supplied source-shaped
-drafts; the episode slice likewise requires an explicit source event/result
-and OrgWorld, so it does not turn a mock task event into an episode. The
-reflection slice requires a terminal source episode, an explicitly mounted HCI
-OrgWorld, and an OpenAI-compatible source provider; the mock shell generates
-neither a hidden reflection nor a wish. Full OrgWorld execution, live LLM
-reflection/proposal generation, growth/policy execution, and the HCI host
-adapter are explicitly unavailable/fail-closed. Do not treat a successful run
-as a workflow acceptance, HCI execution, or paper result: `completed` means
-only that the compatibility trace shell emitted and validated its public
-artifacts. See [source provenance and boundary](docs/SOURCE_PROVENANCE.md).
+The release host is not a claim that this standalone package reproduces every
+paper result.  It ships the deterministic B3 organization lifecycle and makes
+no external evaluator, ProgramBench, CooperBench, HCI human-seat, or model
+provider claim.  See [source provenance and boundaries](docs/SOURCE_PROVENANCE.md).
 
 ## Quickstart
 
-Python 3.12+ and `uv` are required. Linux is the canonical runtime; Windows
-users should work inside WSL2.
+Python 3.12+ and `uv` are required.  Linux and WSL2 are the supported paths.
 
 ```bash
 uv sync --extra dev --frozen
-cp .env.example .env
 uv run relic-agent check-env
 uv run relic-agent smoke
-uv run relic-agent run-minimal
 uv run relic-agent run-default
-uv run relic-agent replay-example
 ```
 
-Open the bundled no-cost boundary sample in the public organization observatory:
+`smoke` runs the real host for 12 ticks; `run-default` runs seed 42 for 72
+ticks.  Neither path contacts a model provider.  The default run produces
+source actions, episodes, reflections, proposals, and protocol specifications
+when the source lifecycle reaches them.
 
-```bash
-uv run relic-agent inspect-example
-```
+Runs are written below `outputs/<run-id>/` unless `--output-root` or
+`RELIC_AGENT_OUTPUT_ROOT` is supplied.  Each run includes:
 
-Then open <http://127.0.0.1:8765>. To inspect a new run:
+- `config.yaml` — exact source-native configuration snapshot;
+- `run.json` — source pin, blob verification, lifecycle summary, and public
+  boundary status;
+- `status.json` — atomic running/completed status;
+- `trace.json` — digest-bound public replay trace.
 
-```bash
-uv run relic-agent inspect \
-  --trace outputs/<run-id>/trace.json \
-  --mode replay
-```
-
-Equivalent Bash wrappers are available under `scripts/bash/`.
-
-Docker quickstart:
-
-```bash
-mkdir -p outputs
-docker compose build relic-agent-runtime
-docker compose run --rm relic-agent-runtime check-env
-docker compose run --rm relic-agent-runtime smoke --output-root /data/runs
-docker compose run --rm relic-agent-runtime run-default --output-root /data/runs
-docker compose up relic-inspector
-```
-
-The smoke and bundled boundary replay make zero provider calls. Runs are written below
-`outputs/<run-id>/` unless `--output-root` or `RELIC_AGENT_OUTPUT_ROOT` selects
-another location.
-
-Each run directory contains:
-
-- `config.yaml`: exact organization config snapshot;
-- `run.json`: run identity, timestamps, hashes, status, and summary;
-- `status.json`: terminal status marker;
-- `trace.json`: digest-bound `relic-trace-v1` public replay.
-
-Private reflections, private memories, and provider messages are excluded from
-the public trace. A public proposal can keep opaque lineage identifiers without
-publishing the private reflection text that motivated it.
-
-The Inspector synchronizes its Timeline, organization snapshot, Object
-Inspector, and State Diff at event-level frames. Optional artifact, repository,
-PR/CI, and evaluation panels say when records were not published rather than
-treating missing data as zero. See [Inspector](docs/inspector.md).
-
-## Run, replay, customize
-
-Run an explicit organization config:
-
-```bash
-uv run relic-agent run \
-  --config configs/minimal.yaml \
-  --output-root outputs/minimal
-```
-
-Validate and summarize a generated trace:
-
-```bash
-uv run relic-agent replay \
-  --trace outputs/minimal/<run-id>/trace.json
-```
-
-Copy `configs/minimal.yaml` and change the members, display names, roles,
-profiles, skills, tools, tasks, approval threshold, seed, or runtime length.
-The source protocol review latency is fixed at `3`. The loader is fail-closed:
-unknown fields, duplicate IDs, invalid owners, out-of-range scores, unsupported
-providers, and a non-source review latency are rejected before a run starts.
-
-See [installation](docs/installation.md),
-[configuration](docs/configuration.md), [Docker](docs/docker.md),
-[Inspector](docs/inspector.md), and [architecture](docs/architecture.md) for the
-current supported surface.
-
-## Platform support
-
-| Platform | Current support | Recommended path |
-|---|---|---|
-| Linux | Full for this milestone | Native Python CLI |
-| Windows 11 + WSL2 | Full for this milestone | WSL2 + Python CLI |
-| Windows native PowerShell | Launcher only | PowerShell invokes WSL2 |
-| Docker on Linux / Docker Desktop | Full for this milestone | Linux container |
-| macOS | Best effort | Native CLI if checks pass |
-
-## Full regression test suite / 完整回归测试
-
-`main` contains the release-focused runtime, replay, Inspector, wrapper, and
-Docker-boundary tests for this milestone. The default `uv run pytest` command
-does not contact a model provider. No current default-suite test is marked
-`live`, `llm`, `slow`, or `docker`; future tests using those markers must stay
-opt-in because they may require credentials, substantial runtime, or a Docker
-daemon.
-
-The handoff allows a future `full-tests` branch for sanitized historical
-agent-runtime regressions, but no such branch is present in this release
-snapshot. If it is published later, it must be based on the matching release
-commit, add test depth rather than a second runtime implementation, and exclude
-paper benchmark tests, obsolete systems, private fixtures, credentials, and
-development-machine paths.
-
-`main` 包含本阶段默认执行的 release-focused tests，`uv run pytest` 默认不会
-调用模型 provider。当前默认测试集没有标记为 `live`、`llm`、`slow` 或
-`docker` 的测试；未来使用这些 marker 的测试必须只由用户显式启用。交接文档
-允许未来建立保存清理后 agent-runtime 历史回归测试的
-`full-tests` 分支；当前 release 快照尚未发布该分支，因此这里不提供会失败的
-切换命令。
-
-## 中文说明
-
-> **运行你自己的 Relic organization。**
-
-`relic-agent` 是一个面向发布的壳层，围绕 source-first 的 organization-core
-抽取构建；它不是论文 benchmark，也不宣称已完整复现 B3/HCI。默认 protocol
-lifecycle、source-shaped proposal，以及需要显式 source event/result 和 OrgWorld
-输入的 event-to-episode lifecycle 和 reflection contracts 都接到固定版本的 HCI
-closure；deterministic shell 仍负责 CLI、公开 trace、Inspector、Docker，以及时钟/trace
-发布。它不会声称、开始、推进、阻塞、完成、选择或执行配置里的 task。
-
-source proposal-manager slice 只接受外部提供的 source-shaped draft；episode slice
-也只接受显式的 source event/result 和 OrgWorld，绝不会把 mock task event 编成
-episode；reflection slice 则要求 closed source episode、显式挂载的 HCI OrgWorld
-以及 OpenAI-compatible source provider，mock shell 不会偷偷生成 reflection/wish。
-完整 OrgWorld execution、live LLM reflection/proposal generation、growth/policy
-execution 和 HCI host adapter 都是 explicitly unavailable/fail-closed。成功的 run
-不能当作 workflow acceptance、HCI execution 或论文结果；`completed` 只表示
-compatibility trace shell 已写出并校验公开产物。详见
-[source provenance and boundary](docs/SOURCE_PROVENANCE.md)。
-
-当前可直接复制运行：
-
-```bash
-uv sync --extra dev --frozen
-cp .env.example .env
-uv run relic-agent check-env
-uv run relic-agent smoke
-uv run relic-agent run-minimal
-uv run relic-agent run-default
-uv run relic-agent replay-example
-```
-
-启动 bundled boundary replay Inspector（无模型费用）：
-
-```bash
-uv run relic-agent inspect-example
-```
-
-然后在 Windows 或 Linux 浏览器打开 <http://127.0.0.1:8765>。查看用户新 run：
+Inspect a completed trace locally:
 
 ```bash
 uv run relic-agent inspect --trace outputs/<run-id>/trace.json --mode replay
 ```
 
-Windows 用户的正式路径是 **Windows → WSL2 → Linux runtime**。新版 Inspector
-已经支持 bundled replay、用户 trace 和逐 tick 原子更新的 live trace；live model
-provider adapter 尚未实现。Docker、Bash wrapper 已实机验证；PowerShell wrapper
-已通过 PowerShell 7.6.6 语法和转发契约测试，但 Windows 宿主到 WSL 的端到端
-fresh-clone 流程仍需在发布前人工验收。
+Then open <http://127.0.0.1:8765>.  The Inspector serves only the public trace;
+private workspaces, prompts, memories, raw reflections, and provider traffic
+are not exported.
+
+## Configuration surface
+
+`configs/default.yaml` and `configs/minimal.yaml` use
+`relic-agent-source-native-v1`.  They select only the shipped `org_default` B3
+scenario, seed, and tick count.  A generic roster/task YAML is rejected rather
+than partially translated into a different organization.  The source’s stable
+agent IDs remain intact; the public projection displays `scarlett` as `Los Xi`.
+
+`run-minimal` is a short source-native run (seed 7, 12 ticks).  It is useful
+for an installation check but may not yet have enough lifecycle evidence for
+`workflow_acceptance: passed`; `run-default` is the canonical 72-tick local
+workflow acceptance path.
+
+## Docker
+
+```bash
+mkdir -p outputs
+docker compose build relic-agent-runtime
+docker compose run --rm relic-agent-runtime check-env
+docker compose run --rm relic-agent-runtime run-default --output-root /data/runs
+docker compose up relic-inspector
+```
+
+Docker uses the same CLI and source-native host as native execution.  See
+[Docker](docs/docker.md) for the read-only container boundary and
+[installation](docs/installation.md) for WSL details.
+
+## Verification
+
+```bash
+uv run pytest
+uv run ruff check .
+```
+
+The source-host conformance checks verify critical source blobs and the seven
+source-owned structures (action log, policy trace, episodes, reflections,
+wishes, proposals, and protocol specifications) for the pinned 336-tick smoke
+seeds.  The trace and Inspector tests validate the public privacy boundary.
+
+## 中文说明
+
+`relic-agent` 默认直接构建并推进 vendored 的 B3 `OrgWorld`，不是旧的独立时钟/
+trace 机制。`run-default` 使用 seed 42 运行 72 ticks，并导出
+经过隐私过滤的 `relic-trace-v1`，可用 Inspector 查看。该独立发布包不声称复现
+论文全部结果，也不包含外部 evaluator、ProgramBench、CooperBench、HCI 人类座位
+或在线模型调用。配置只允许选择已封装的 source-native B3 情景，不能把任意
+两三人 YAML 静默翻译成另一套组织运行时。

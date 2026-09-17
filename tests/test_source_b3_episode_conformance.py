@@ -9,7 +9,6 @@ from types import SimpleNamespace
 import pytest
 
 from organization_core import OrganizationEventType
-from relic_agent.config import load_config
 from relic_agent.source_b3.episodes import (
     SourceB3EpisodeHostUnavailableError,
     SourceB3EpisodeLifecycleAdapter,
@@ -26,6 +25,17 @@ from relic_agent.source_core import SourceCoreObservationBridge
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _archived_projection_config(*agent_ids: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        organization_id="archived-projection",
+        runtime=SimpleNamespace(seed=7),
+        agents=tuple(
+            SimpleNamespace(agent_id=agent_id, role="member", profile={}, skills={})
+            for agent_id in agent_ids
+        ),
+    )
 
 
 def _blob_id(path: str) -> str:
@@ -168,7 +178,7 @@ def test_source_execution_result_normalization_is_preserved() -> None:
 @pytest.mark.unit
 def test_closed_source_debugging_episode_projects_once_to_core_boundary() -> None:
     bridge = SourceCoreObservationBridge.from_config(
-        load_config(ROOT / "configs" / "minimal.yaml"),
+        _archived_projection_config("paul", "calvin"),
         run_id="source-b3-episode-projection",
     )
     adapter = SourceB3EpisodeLifecycleAdapter()
