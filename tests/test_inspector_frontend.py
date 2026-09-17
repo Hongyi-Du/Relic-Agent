@@ -1,4 +1,6 @@
+import hashlib
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -8,6 +10,32 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "relic_agent" / "inspector" / "static"
+_CANONICAL_STATIC_ROOT_ENV = "RELIC_CANONICAL_INSPECTOR_STATIC_ROOT"
+
+
+def _canonical_static_root() -> Path | None:
+    """Find the release-owned Inspector asset source without a runtime dependency."""
+
+    configured = os.environ.get(_CANONICAL_STATIC_ROOT_ENV)
+    if configured:
+        return Path(configured).expanduser().resolve()
+    sibling = ROOT.parent / "Relic" / "relic" / "inspector" / "static"
+    return sibling if sibling.is_dir() else None
+
+
+@pytest.mark.release
+def test_static_assets_match_canonical_relic_hashes() -> None:
+    canonical = _canonical_static_root()
+    if canonical is None:
+        pytest.skip(
+            "canonical Relic Inspector assets unavailable; set "
+            f"{_CANONICAL_STATIC_ROOT_ENV} to verify cross-repository parity"
+        )
+
+    for name in ("index.html", "app.css", "app.js"):
+        actual = hashlib.sha256((STATIC / name).read_bytes()).hexdigest()
+        expected = hashlib.sha256((canonical / name).read_bytes()).hexdigest()
+        assert actual == expected, f"{name} diverged from canonical Relic Inspector asset"
 
 
 @pytest.mark.release
