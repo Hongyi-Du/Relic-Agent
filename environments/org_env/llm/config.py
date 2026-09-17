@@ -37,7 +37,7 @@ from environments.org_env.llm.client import (
     OpenAIOrgLLMClient,
     OrgLLMClient,
 )
-from society_core.openai_runtime import (
+from environments.org_env.llm.openai_runtime import (
     configured_openai_default_headers,
     openai_response_storage_disabled,
     validate_openai_default_headers,

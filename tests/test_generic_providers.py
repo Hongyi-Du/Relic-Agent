@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import json
-from contextlib import nullcontext
+import builtins
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import sys
 import threading
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
 import relic_agent.runtime.providers as provider_module
-import environments.org_env.llm.client as shared_client
 from relic_agent.runtime.providers import (
     OrgLLMClient,
     ProviderCallError,
@@ -492,9 +493,70 @@ def test_openai_adapter_forwards_model_reasoning_and_generation_to_shared_client
 
 
 @pytest.mark.integration
-def test_local_http_server_exercises_all_live_provider_wire_formats(
+def test_openai_shared_sdk_invocation_works_without_source_runtime_dependency(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """A fake SDK proves the shared client reaches the provider call boundary."""
+
+    seen: dict[str, Any] = {"calls": 0}
+
+    class Completions:
+        def create(self, **payload: Any) -> Any:
+            seen["calls"] += 1
+            seen["request"] = payload
+            return SimpleNamespace(
+                id="local-sdk-response",
+                model=payload["model"],
+                choices=[SimpleNamespace(message=SimpleNamespace(content="sdk-local"))],
+                usage=SimpleNamespace(prompt_tokens=2, completion_tokens=1, total_tokens=3),
+            )
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs: Any) -> None:
+            seen["init"] = kwargs
+            self.chat = SimpleNamespace(completions=Completions())
+
+    real_import = builtins.__import__
+
+    def reject_source_runtime(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == "society_core" or name.startswith("society_core."):
+            raise ModuleNotFoundError(name)
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=FakeOpenAI))
+    monkeypatch.setattr(builtins, "__import__", reject_source_runtime)
+    registry = ProviderRegistry(
+        {
+            "openai": {
+                "type": "openai_compatible",
+                "parameters": {"base_url": "https://openai.invalid/v1"},
+                "api_key_env": "OPENAI_LOCAL_TOKEN",
+                "default_model": "gpt-local",
+            }
+        },
+        [{"id": "author", "provider": "openai"}],
+        environment={"OPENAI_LOCAL_TOKEN": "local-secret"},
+    )
+
+    assert registry.client_for_agent("author").generate_text("s", "u") == "sdk-local"
+    assert seen["calls"] == 1
+    assert seen["init"]["api_key"] == "local-secret"
+    assert seen["request"]["model"] == "gpt-local"
+    assert seen["request"]["messages"] == [
+        {"role": "system", "content": "s"},
+        {"role": "user", "content": "u"},
+    ]
+    assert registry.stats()["usage_totals"] == {
+        "prompt_tokens": 2,
+        "completion_tokens": 1,
+        "total_tokens": 3,
+        "cached_prompt_tokens": 0,
+    }
+    assert "local-secret" not in json.dumps(registry.stats())
+
+
+@pytest.mark.integration
+def test_local_http_server_exercises_all_live_provider_wire_formats() -> None:
     """Exercise only loopback transports; this test never contacts a paid API."""
 
     requests: list[tuple[str, dict[str, Any], dict[str, str]]] = []
@@ -538,10 +600,6 @@ def test_local_http_server_exercises_all_live_provider_wire_formats(
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        # The vendored shared client normally uses the optional source
-        # ``society_core`` watchdog.  Bypass that process watchdog here while
-        # still exercising the installed OpenAI SDK against loopback.
-        monkeypatch.setattr(shared_client, "_openai_call_watchdog", lambda *_args, **_kwargs: nullcontext())
         port = server.server_port
         registry = ProviderRegistry(
             {

@@ -15,15 +15,11 @@ import os
 import time
 from typing import Any, Callable, Dict, List, Mapping, Optional
 
+from environments.org_env.llm.openai_runtime import (
+    openai_call_watchdog as _openai_call_watchdog,
+)
+
 USAGE_COUNTERS = ("prompt_tokens", "completion_tokens", "total_tokens", "cached_prompt_tokens")
-
-
-def _openai_call_watchdog(seconds: float, *, label: str):
-    """Import lazily to avoid a package-initialization cycle through society_core."""
-
-    from society_core.openai_runtime import openai_call_watchdog
-
-    return openai_call_watchdog(seconds, label=label)
 
 
 class LLMError(Exception):
