@@ -1,7 +1,7 @@
 """Source-native execution host for a B3 Relic organization.
 
 The release shell previously advanced a clock beside a bespoke state model.
-This host builds and steps the vendored SocioGenesis ``OrgWorld`` directly.
+This host builds and steps the vendored Relic B3 ``OrgWorld`` directly.
 All public output is a privacy-filtered projection of that real world.
 """
 

@@ -23,6 +23,25 @@ source scenarios fail before the source host starts.  This is a source-native
 capability boundary, not a claim of a complete adversarial arbitrary-YAML
 injection/containment system or a sandbox for user-modified Python/source.
 
+This is also the principal gap between the current release and the intended
+general-purpose Relic Agent framework: users cannot yet replace agents, roles,
+models, tools, tasks, governance, initial protocols, or SDL/CLG configuration.
+The default `OrgWorld` still owns a fixed source roster and product-oriented
+scenario.  A real generic configuration surface needs a tested source-backed
+adapter; accepting a broad YAML before that exists would be misleading.
+See [the extension guide](extension_guide.md).
+
+## Public lifecycle observability depth
+
+The source world can retain richer reflection/wish lineage and protocol
+revision/retirement information than the current public exporter emits.  The
+Inspector safely shows selected actions, episodes, proposals, protocol
+summaries, and protocol lifecycle events, but it is not yet a complete public
+governance ledger for reflection → wish → proposal → amendment/retirement.
+Private reflection text, memory, prompts, policy candidates, and provider
+traffic remain deliberately unavailable.  This is an exporter/observability
+implementation gap, not evidence that private data should be published.
+
 ## Live model-provider path
 
 The recorded default and minimal runs made zero provider calls.  Live LLM
@@ -51,3 +70,8 @@ fetch/push/published-release verification was performed.  The full pytest,
 lint, release, Docker, clean-clone, and cross-platform suites were not rerun
 as part of the final reproduction record; the completed commands are exactly
 those listed in [the reproduction report](REPRODUCTION_RUN_REPORT.md).
+
+The standalone repository currently has no `full-tests` branch.  The handoff
+does not require Relic Agent to use the paper repository's HCI/Cooper branch
+layout; a future agent-runtime-only `full-tests` branch should be created from
+a release tag after its historical tests are cleaned and classified.

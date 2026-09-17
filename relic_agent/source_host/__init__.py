@@ -1,6 +1,6 @@
 """Source-native B3 host for the Relic-Agent release surface.
 
-This package deliberately mounts the vendored SocioGenesis ``OrgWorld`` rather
+This package deliberately mounts the vendored Relic B3 ``OrgWorld`` rather
 than translating it into the former small release-shell state machine.
 """
 

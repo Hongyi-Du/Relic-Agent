@@ -1,9 +1,10 @@
 """Strict source-native configuration for the Relic-Agent B3 host.
 
 The previous generic organization YAML described an invented release-shell
-state model.  It cannot faithfully instantiate SocioGenesis ``OrgWorld`` and
-is therefore rejected rather than partially translated.  Custom organization
-configuration is a future source-backed adapter, not a silent fallback.
+state model.  It cannot faithfully instantiate the vendored Relic B3
+``OrgWorld`` and is therefore rejected rather than partially translated.
+Custom organization configuration is a future source-backed adapter, not a
+silent fallback.
 """
 
 from __future__ import annotations

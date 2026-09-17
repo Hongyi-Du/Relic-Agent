@@ -1,7 +1,7 @@
 [project]
 name = "relic-agent"
 version = "0.1.0.dev0"
-description = "Source-native B3 organization runtime extracted from SocioGenesis"
+description = "Source-native B3 organization runtime for Relic"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
