@@ -106,6 +106,8 @@ _PRIVACY_KEYS = frozenset(
 )
 _FRAME_KEYS = frozenset(
     {
+        "tool_events",
+        "lineage",
         "frame_id",
         "sequence",
         "tick",
@@ -122,6 +124,7 @@ _FRAME_KEYS = frozenset(
 _ORGANIZATION_KEYS = frozenset(
     {
         "organization_id",
+        "config_summary",
         "name",
         "tick",
         "agents",
@@ -145,6 +148,7 @@ _GOVERNANCE_EVENT_KEYS = frozenset(
 _PRIVATE_EVENT_TYPES = frozenset({"reflection_completed", "wish_created"})
 
 _AGENT_FIELD_KINDS = {
+    "provider": "string", "model": "string", "permissions": "strings",
     "agent_id": "string",
     "display_name": "string",
     "role": "string",
@@ -226,6 +230,7 @@ _PROPOSAL_FIELD_KINDS = {
     "repair_target_protocol_id": "string",
 }
 _PROTOCOL_FIELD_KINDS = {
+    "origin": "string",
     "protocol_id": "string",
     "protocol_type": "string",
     "name": "string",
@@ -409,6 +414,28 @@ _REPO_RECORD_FIELD_KINDS = {
     "tick": "integer",
     "related_object_ids": "strings",
     "related_protocol_ids": "strings",
+}
+
+
+_CONFIG_SUMMARY_FIELD_KINDS = {
+    "description": "string", "channels": "strings", "decision_mode": "string",
+    "features_enabled": "strings", "features_disabled": "strings",
+    "approval_mode": "string", "deadlock_behavior": "string", "decision_visibility": "string",
+    "protocol_quorum": "number", "quorum": "number", "proposal_review_delay_ticks": "number",
+    "protocol_adoption_threshold": "number", "amendment_threshold": "number",
+    "approver_roles": "strings", "approver_members": "strings",
+    "reflection_enabled": "boolean", "reflection_cadence_ticks": "integer",
+}
+_TOOL_EVENT_FIELD_KINDS = {
+    "event_id": "string", "event_type": "string", "actor_id": "string",
+    "tick": "integer", "tool_id": "string", "status": "string", "error_type": "string",
+}
+_LINEAGE_FIELD_KINDS = {
+    "lineage_id": "string", "kind": "string", "agent_id": "string", "tick": "integer",
+    "source_episode_ids": "strings", "source_event_ids": "strings", "created_wish_ids": "strings",
+    "source_reflection_ids": "strings", "generated_proposal_ids": "strings",
+    "related_episode_ids": "strings", "source_reflection_id": "string",
+    "source_episode_id": "string", "status": "string",
 }
 
 
@@ -758,6 +785,16 @@ def _validate_structure(payload: dict[str, Any]) -> None:
             raise TraceError(f"{label}.organization_id does not match the trace")
         if _require_integer(organization.get("tick"), f"{label}.organization.tick") != tick:
             raise TraceError(f"{label}.organization.tick does not match the frame")
+        if "config_summary" in organization:
+            _validate_typed_record(organization["config_summary"],
+                                   label=f"{label}.organization.config_summary",
+                                   field_kinds=_CONFIG_SUMMARY_FIELD_KINDS)
+        if "tool_events" in frame:
+            _validate_object_collection(frame["tool_events"], label=f"{label}.tool_events",
+                                        identifier="event_id", field_kinds=_TOOL_EVENT_FIELD_KINDS)
+        if "lineage" in frame:
+            _validate_object_collection(frame["lineage"], label=f"{label}.lineage",
+                                        identifier="lineage_id", field_kinds=_LINEAGE_FIELD_KINDS)
         if "name" in organization:
             _require_string(organization["name"], f"{label}.organization.name")
         for key in ("agents", "tasks", "proposals", "protocols"):

@@ -72,6 +72,17 @@ def _public_agents(world: Any) -> list[dict[str, Any]]:
                 "status": _text(getattr(agent, "current_status", None), "unknown"),
             }
         )
+    config = getattr(world, "generic_config", {}) or {}
+    configured = {a["id"]: a for a in config.get("agents", [])}
+    for row in rows:
+        agent = configured.get(row["agent_id"])
+        if agent:
+            provider = config.get("providers", {}).get(agent.get("provider"), {})
+            row.update(display_name=agent.get("display_name", row["display_name"]),
+                       tools=list(agent.get("tools", [])),
+                       permissions=list(agent.get("permissions", [])),
+                       provider=agent.get("provider", ""),
+                       model=agent.get("model") or provider.get("default_model", ""))
     return rows
 
 
@@ -100,6 +111,11 @@ def _public_tasks(world: Any) -> list[dict[str, Any]]:
                 row[key] = value
         rows.append(row)
     return rows
+
+
+def _private_governance(world: Any) -> bool:
+    config = getattr(world, "generic_config", {}) or {}
+    return config.get("governance", {}).get("decision_visibility") in {"private", "roles", "members"}
 
 
 def _public_proposals(world: Any) -> list[dict[str, Any]]:
@@ -139,6 +155,8 @@ def _public_proposals(world: Any) -> list[dict[str, Any]]:
                 getattr(proposal, "opposers", ()) or (), allowed=agents
             ),
         }
+        for key in ("source_wish_ids", "source_episode_ids", "source_event_ids"):
+            row[key] = _unique_strings(getattr(proposal, key, ()) or ())
         proposer = _text(getattr(proposal, "proposer_agent_id", None)).strip()
         if proposer in agents:
             row["proposer_agent_id"] = proposer
@@ -148,6 +166,9 @@ def _public_proposals(world: Any) -> list[dict[str, Any]]:
             "rejection_reason",
             "suggested_revision",
             "family",
+            "source_wish_id", "source_reflection_id", "source_episode_id",
+            "object_created_id", "amends_protocol_id", "repair_kind",
+            "repair_target_protocol_id",
         ):
             value = _text(getattr(proposal, key, None)).strip()
             if value:
@@ -165,6 +186,12 @@ def _public_proposals(world: Any) -> list[dict[str, Any]]:
             if value is not None:
                 row[key] = value
         rows.append(row)
+    if _private_governance(world):
+        public_keys = {"proposal_id", "proposal_type", "status", "source_wish_id", "source_wish_ids",
+                       "source_reflection_id", "source_episode_id", "source_episode_ids",
+                       "object_created_id", "created_at_tick", "updated_at_tick", "adopted_tick",
+                       "amends_protocol_id", "repair_kind", "repair_target_protocol_id"}
+        rows = [{key: value for key, value in row.items() if key in public_keys} for row in rows]
     return rows
 
 
@@ -199,7 +226,34 @@ def _public_protocols(world: Any) -> list[dict[str, Any]]:
         proposer = _text(getattr(protocol, "proposer_id", None)).strip()
         if proposer in agents:
             row["proposer_id"] = proposer
-        for key in ("first_tick", "last_active_tick", "persistence_ticks"):
+        spec = (getattr(getattr(world, "proposal_manager", None), "protocol_specs", {}) or {}).get(protocol_id)
+        if spec is not None:
+            for key in ("created_from_proposal_id", "trigger_condition", "enforcement_rule", "sunset_rule"):
+                value = getattr(spec, key, None)
+                if value:
+                    row[key] = str(value)
+            row["version"] = int(getattr(spec, "revision", 0)) + 1
+        origins = getattr(world, "protocol_origins", {}) or {}
+        row["origin"] = origins.get(protocol_id, getattr(protocol, "origin", "emergent"))
+        for key in ("created_from_proposal_id", "revision"):
+            value = getattr(protocol, key, None)
+            if value is not None:
+                row[key] = str(value)
+        row["revisions"] = []
+        for event in getattr(registry, "events", ()) or ():
+            if getattr(event, "protocol_id", None) != protocol_id:
+                continue
+            kind = str(getattr(event, "event_type", ""))
+            data = getattr(event, "data", {}) or {}
+            if "amend" in kind or "revis" in kind:
+                revision = {"event_id": str(event.event_id), "tick": int(event.tick)}
+                for key in ("revision_kind", "source_proposal_id"):
+                    if data.get(key):
+                        revision[key] = str(data[key])
+                row["revisions"].append(revision)
+            if "retir" in kind or "deprecat" in kind or "obsolet" in kind:
+                row["retired_tick"] = int(event.tick)
+        for key in ("first_tick", "last_active_tick", "persistence_ticks", "retired_tick"):
             value = _number(getattr(protocol, key, None))
             if value is not None:
                 row[key] = value
@@ -314,11 +368,75 @@ def _public_governance_events(world: Any, *, event_start: int) -> list[dict[str,
             # public projection; detailed data stays in the source ledger.
             "data": {},
         }
+        data = getattr(event, "data", {}) or {}
+        if isinstance(data, Mapping):
+            for key in ("amendment_id", "context_id", "episode_id", "task_id",
+                        "violation_event_id", "revision_kind", "source_proposal_id"):
+                if isinstance(data.get(key), str):
+                    row["data"][key] = data[key]
         actor_id = _text(getattr(event, "actor_id", None)).strip()
         if actor_id in agents:
             row["actor_id"] = actor_id
         projected.append(row)
+    if _private_governance(world):
+        for row in projected:
+            row.pop("actor_id", None)
+            row["data"] = {}
     return projected
+
+
+def _public_lineage(world: Any) -> list[dict[str, Any]]:
+    """Publish identifiers and relationships, never reflection or wish text."""
+    manager = getattr(world, "reflection_manager", None)
+    rows = []
+    for kind, collection, id_key in (("reflection", "reflections", "reflection_id"),
+                                      ("wish", "wishes", "wish_id")):
+        for key, item in (getattr(manager, collection, {}) or {}).items():
+            row = {"lineage_id": str(key), "kind": kind,
+                   "agent_id": str(getattr(item, "agent_id", "")),
+                   "tick": int(getattr(item, "tick", getattr(item, "created_at_tick", 0)))}
+            for field in ("source_episode_ids", "source_event_ids", "created_wish_ids",
+                          "source_reflection_ids", "generated_proposal_ids", "related_episode_ids"):
+                values = getattr(item, field, None)
+                if values:
+                    row[field] = _unique_strings(values)
+            for field in ("source_reflection_id", "source_episode_id", "status"):
+                value = getattr(item, field, None)
+                if value:
+                    row[field] = str(value)
+            rows.append(row)
+    return rows
+
+
+def _public_config(world: Any) -> dict[str, Any] | None:
+    config = getattr(world, "generic_config", None)
+    if not config:
+        return None
+    org = config.get("organization", {})
+    governance = config.get("governance", {})
+    learning = config.get("learning", {})
+    # Deliberate allowlists: provider endpoints, prompt text, plugin arguments,
+    # memory, workspace paths, and secret environment values stay local.
+    summary = {"description": org.get("description", ""),
+               "channels": list(org.get("channels", [])),
+               "decision_mode": config.get("runtime", {}).get("decision_mode", "profile_policy"),
+               "features_enabled": sorted(k for k, v in learning.items() if v is True),
+               "features_disabled": sorted(k for k, v in learning.items() if v is False)}
+    for key in ("approval_mode", "deadlock_behavior", "decision_visibility"):
+        if isinstance(governance.get(key), str):
+            summary[key] = governance[key]
+    for key in ("protocol_quorum", "quorum", "proposal_review_delay_ticks",
+                "protocol_adoption_threshold", "amendment_threshold"):
+        if isinstance(governance.get(key), (int, float)):
+            summary[key] = governance[key]
+    for key in ("approver_roles", "approver_members"):
+        if key in governance:
+            summary[key] = list(governance[key])
+    reflection = learning.get("reflection", {})
+    if isinstance(reflection, dict):
+        summary["reflection_enabled"] = reflection.get("enabled", True)
+        summary["reflection_cadence_ticks"] = reflection.get("cadence_ticks", 6)
+    return summary
 
 
 def project_public_frame(
@@ -333,7 +451,7 @@ def project_public_frame(
     """Create one strict public frame from a source world at its current tick."""
 
     tick = int(getattr(world, "world_tick", 0) or 0)
-    return {
+    frame = {
         "frame_id": f"frame_{sequence:06d}",
         "sequence": sequence,
         "tick": tick,
@@ -356,6 +474,20 @@ def project_public_frame(
             world, event_start=protocol_event_start
         ),
     }
+    frame["tool_events"] = [
+        {"event_id": str(event["event_id"]), "event_type": "tool_execution",
+         "tick": tick, "actor_id": str(event["actor_id"]),
+         "tool_id": str(event["tool_id"]), "status": str(event["status"]),
+         **({"error_type": str(event["error_type"])} if "error_type" in event else {})}
+        for event in getattr(world, "events", [])
+        if isinstance(event, dict) and event.get("type") == "tool_execution"
+        and event.get("tick") == tick and "event_id" in event
+    ]
+    frame["lineage"] = _public_lineage(world)
+    summary = _public_config(world)
+    if summary is not None:
+        frame["organization"]["config_summary"] = summary
+    return frame
 
 
 __all__ = ["project_public_frame"]

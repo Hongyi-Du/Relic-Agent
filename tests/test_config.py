@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 @pytest.mark.unit
 @pytest.mark.parametrize(
     ("name", "seed", "ticks"),
-    [("minimal.yaml", 7, 12), ("default.yaml", 42, 72)],
+    [("source-b3.yaml", 42, 72)],
 )
 def test_bundled_configs_select_the_source_native_host(
     name: str, seed: int, ticks: int

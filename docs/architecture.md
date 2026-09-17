@@ -1,43 +1,26 @@
 # Runtime architecture
 
-```text
-source-native CLI / Bash / PowerShell / Docker
-  -> strict source-native config (scenario, seed, ticks only)
-  -> OrgWorld(default_scenario(seed)).build()
-  -> repeated OrgWorld.step()
-  -> source-owned action / policy / episode / reflection / proposal / protocol state
-  -> privacy-filtered relic-trace-v1 projection
-  -> replay validator and public Inspector
-```
+Both public modes execute the same `OrgWorld.step()` and its episode, reflection,
+wish, proposal, governance, protocol, communication, and capability machinery.
+The CLI does not select actions or maintain another simulation state.
 
-`OrganizationRuntime` owns release mechanics only: safe run directories,
-atomic status/trace writes, configuration snapshots, provenance, and a public
-projection. It does not select actions, maintain a parallel task state machine,
-or synthesize episodes/reflections/proposals. Those transitions remain inside
-the vendored source world.
+- The **generic builder** creates members, task specifications, tools, provider
+  bindings, context, and governance from validated `relic-agent-v2` configuration.
+- The **source B3 builder** constructs the canonical source scenario unchanged.
+  Its fixed roster and product backlog are an explicit compatibility preset.
+- `OrganizationRuntime` manages run directories, stepping, status, manifests,
+  and public projection. Builders determine initial state and policy settings.
+- Provider adapters route each agent to its configured model. Deterministic
+  operation is the default for examples; live providers are explicitly configured.
+- Tool registration and permissions sit at the action boundary. New plugins use
+  this boundary instead of changing world implementation.
 
-The active host uses the sealed B3 commit described in
-[source provenance](SOURCE_PROVENANCE.md). Its source-critical blobs are
-verified before a run, and the default runtime checks that unavailable external
-systems were not imported. Small package-initializer adapters make upstream
-aggregators lazy; they do not edit the pinned world/lifecycle seams.
+Public projection is an allowlist, separate from internal debugger snapshots.
+It exports safe identifiers and lifecycle relationships, configuration summaries,
+and public work state. Private reflection text, memory, credentials, prompts,
+and provider request/response bodies are excluded. Inspector consumes that public
+trace, and replay verifies its schema and digest.
 
-The prior `organization_core` and `source_b3` slices remain archival,
-lazy-import compatibility material. They are not reached from the normal CLI,
-Docker command, wrapper, or `OrgWorld` step path.
-
-## Trace and Inspector
-
-The source world contains deep/private state. `source_host.projection` reads
-only selected public facts and emits strict frames after each source tick.
-Decisions identify source actions without exposing candidate scores or private
-reasoning. The trace validator enforces digest, references, privacy fields, and
-append-only frame semantics. Inspector accepts only that public trace and
-remains a release adapter rather than a source-world debugger.
-
-## Unsupported paths
-
-The package intentionally does not mount ProgramBench, CooperBench, external
-evaluators, `society_core`, external society, NatureEnv, or the HCI human-seat
-application. A request to enable those through generic config is rejected; no
-compatibility fallback is substituted.
+Historical source extraction and archived compatibility code remain documented
+in `SOURCE_PROVENANCE.md`. They are not additional prerequisites for configuring
+or running a generic organization.

@@ -1,41 +1,45 @@
-# Source-native configuration
+# Configuration
 
-The only supported schema is `relic-agent-source-native-v1`:
+`relic-agent-v2` describes a generic organization. The separate
+`relic-agent-source-native-v1` schema remains available in `configs/source-b3.yaml`
+for canonical source B3 runs.
 
-```yaml
-schema_version: relic-agent-source-native-v1
-organization:
-  id: relic-default-organization
-  name: Relic Default Organization
-runtime:
-  scenario: org_default
-  baseline: b3
-  seed: 42
-  ticks: 72
-  profile_causality: source_recorded
-  capability_transfer: {}
+Run `relic-agent init my-org` for a working starting point, then
+`relic-agent validate --config my-org/organization.yaml`. Validation checks types,
+identifiers, references, provider declarations, and plugins without stepping the
+world or calling a provider. Unknown keys are errors so spelling mistakes cannot
+silently disable a setting. Agent count and role names are unrestricted.
+
+The configuration sections are `organization`, `providers`, `agents`, `tools`,
+`tasks`, `governance`, `protocols`, `learning`, `prompts`, `runtime`, and
+`observability`. [Customization](customization.md) gives the field index;
+[examples](../examples/README.md) contain runnable configurations.
+
+## Precedence
+
+Explicit CLI overrides take precedence over configuration. Secrets and provider
+endpoints come from the environment variables referenced by the configuration;
+missing optional settings use framework defaults. `.env` values do not replace
+already-exported environment variables. A project `.env` is loaded beside its
+configuration before execution.
+
+`--ticks` overrides the configured horizon. `--output-root` overrides
+`RELIC_AGENT_OUTPUT_ROOT`, whose default is `outputs`. `--run-id` sets a stable
+output directory name; an existing run directory is never overwritten.
+
+## Compatibility preset
+
+```bash
+relic-agent run-source-b3 --ticks 72
 ```
 
-The configuration does not define a roster, tasks, governance rules, model
-provider, or action policy. Those belong to the source `OrgWorld`; accepting a
-generic YAML and translating it would create a different runtime. Unknown
-fields, another scenario, another baseline, non-empty capability transfer, or
-a non-source profile intervention fail before execution.
+The source preset retains its canonical roster, tasks, baseline, and scenario.
+Its schema intentionally does not accept generic organization overrides. Use
+`relic-agent-v2` when changing membership, models, tasks, or learning behavior.
 
-`baseline` accepts `b3`, `full`, or `sociogenesis` only as aliases for the
-same shipped B3 source default. It does not select an arbitrary upstream
-branch. `profile_causality: source_recorded` is descriptive and no custom
-causal injection is allowed. The effective provider is always `source_native`;
-the default local lifecycle makes zero model-provider calls.
+## Outputs
 
-## Output location
-
-The output-root precedence is:
-
-1. CLI `--output-root`;
-2. `RELIC_AGENT_OUTPUT_ROOT` from the environment or `.env`;
-3. `outputs`.
-
-Every launcher invokes the same Python CLI. Inspector host/port/mode are also
-explicit flags; Compose's `RELIC_AGENT_INSPECTOR_PORT` affects only its host
-port mapping. A non-loopback Inspector bind needs `--allow-remote`.
+Each completed run writes a configuration snapshot, manifest, status, and public
+trace. Inspector and replay read the trace without calling models. Configuration
+snapshots are local run artifacts; keep initial private context out of shared
+artifacts. Public exports contain structural lineage rather than private text.

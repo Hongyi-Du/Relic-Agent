@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_default_runtime_runs_the_real_source_workflow_and_exports_public_trace(
     tmp_path: Path,
 ) -> None:
-    result = OrganizationRuntime(load_config(ROOT / "configs" / "default.yaml")).run(
+    result = OrganizationRuntime(load_config(ROOT / "configs" / "source-b3.yaml")).run(
         output_root=tmp_path,
         run_id="source-native-72",
     )
@@ -45,7 +45,7 @@ def test_default_runtime_runs_the_real_source_workflow_and_exports_public_trace(
     assert manifest["source"]["loaded_module_boundary"]["status"] == "passed"
     assert manifest["source"]["loaded_module_boundary"]["forbidden_modules_loaded"] == []
     assert (result.run_directory / "config.yaml").read_text(encoding="utf-8") == (
-        ROOT / "configs" / "default.yaml"
+        ROOT / "configs" / "source-b3.yaml"
     ).read_text(encoding="utf-8")
     assert json.loads((result.run_directory / "status.json").read_text(encoding="utf-8")) == {
         "authority": "source_native_orgworld",
@@ -68,8 +68,9 @@ def test_default_runtime_runs_the_real_source_workflow_and_exports_public_trace(
 
 @pytest.mark.integration
 def test_short_source_run_can_be_incomplete_without_falling_back_to_a_shell(tmp_path: Path) -> None:
-    result = OrganizationRuntime(load_config(ROOT / "configs" / "minimal.yaml")).run(
+    result = OrganizationRuntime(load_config(ROOT / "configs" / "source-b3.yaml")).run(
         output_root=tmp_path,
+        ticks=12,
         run_id="source-native-short",
     )
 

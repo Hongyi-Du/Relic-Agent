@@ -1,0 +1,97 @@
+schema_version: relic-agent-v2
+organization:
+  id: custom-tool-team
+  name: Custom Tool Team
+  brief: Produce a short research note and review the evidence together.
+  shared_goals:
+  - Deliver a reviewed research note
+  channels:
+  - general
+  - research
+providers:
+  local:
+    type: mock
+    default_model: deterministic-researcher
+agents:
+- id: researcher
+  display_name: Researcher
+  role: research_lead
+  role_mandate: Coordinate the research note and record its evidence.
+  provider: local
+  skills:
+    research: 0.9
+    synthesis: 0.8
+  tools:
+  - files
+  - task_board
+  - messaging
+  - word_count
+  permissions:
+  - assign_task
+  - propose_protocol
+- id: reviewer
+  display_name: Reviewer
+  role: quality_reviewer
+  role_mandate: Review evidence and help complete shared tasks.
+  provider: local
+  skills:
+    review: 0.95
+    research: 0.7
+  tools:
+  - files
+  - task_board
+  - messaging
+  permissions:
+  - review
+  - approve_protocol
+tools:
+  builtins:
+  - files
+  - task_board
+  - messaging
+  plugins:
+  - id: word_count
+    path: word_count.py
+    entrypoint: execute
+    description: Count the words of an input and save a report.
+    schema:
+      type: object
+      properties:
+        text:
+          type: string
+      required:
+      - text
+      additionalProperties: false
+    timeout_seconds: 2
+    side_effect_policy: workspace
+tasks:
+- id: research-note
+  title: Write and review the initial research note
+  description: Compare approaches and record a conclusion with supporting evidence.
+  priority: 5
+  owner: researcher
+  collaborators:
+  - reviewer
+  expected_deliverables:
+  - research-note
+  - review-report
+  acceptance_criteria:
+  - Conclusion has supporting evidence
+governance:
+  approval_mode: auto
+  approver_members:
+  - reviewer
+  quorum: 1
+protocols:
+  initial: []
+learning:
+  reflection:
+    enabled: true
+    cadence_ticks: 6
+runtime:
+  seed: 7
+  ticks: 12
+  decision_mode: profile_policy
+observability:
+  public_trace: true
+  inspector: true

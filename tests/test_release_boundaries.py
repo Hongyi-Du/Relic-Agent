@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.release
-def test_public_release_entrypoints_describe_the_source_native_host() -> None:
+def test_public_release_entrypoints_describe_shared_runtime_and_presets() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
     configuration = (ROOT / "docs" / "configuration.md").read_text(encoding="utf-8")
@@ -16,7 +16,8 @@ def test_public_release_entrypoints_describe_the_source_native_host() -> None:
     assert "OrgWorld.step()" in readme
     assert "relic-agent-source-native-v1" in configuration
     assert "compatibility trace shell" not in readme.lower()
-    assert "OrgWorld(default_scenario" in engine
+    assert "relic-agent-v2" in configuration
+    assert "generic" in architecture.lower()
     assert '"authority": "source_native_orgworld"' in engine
     assert "does not select actions" in architecture
 

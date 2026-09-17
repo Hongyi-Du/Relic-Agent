@@ -1,0 +1,15 @@
+schema_version: relic-agent-source-native-v1
+organization:
+  id: relic-default-organization
+  name: Relic Default Organization
+
+# This is the source-native B3 example: the canonical eight-member OrgWorld
+# roster at seed 42.  Scarlett's public display name is projected as Los Xi;
+# the stable source agent id remains ``scarlett`` for source compatibility.
+runtime:
+  scenario: org_default
+  baseline: b3
+  seed: 42
+  ticks: 72
+  profile_causality: source_recorded
+  capability_transfer: {}

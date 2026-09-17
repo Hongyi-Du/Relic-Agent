@@ -1,15 +1,214 @@
-schema_version: relic-agent-source-native-v1
+schema_version: relic-agent-v2
 organization:
-  id: relic-default-organization
-  name: Relic Default Organization
-
-# This is the source-native B3 example: the canonical eight-member OrgWorld
-# roster at seed 42.  Scarlett's public display name is projected as Los Xi;
-# the stable source agent id remains ``scarlett`` for source compatibility.
+  id: research-lab
+  name: Research Lab
+  brief: Produce a short research note and review the evidence together.
+  shared_goals:
+  - Deliver a reviewed research note
+  channels:
+  - general
+  - research
+  description: An eight-member configurable research organization.
+providers:
+  local:
+    type: mock
+    default_model: deterministic-researcher
+agents:
+- id: member-1
+  display_name: Research Lead
+  role: research_lead
+  role_mandate: Contribute research_lead expertise to the research report.
+  provider: local
+  skills:
+    research: 0.7
+    review: 0.8
+  profile:
+    openness: 0.8
+    conscientiousness: 0.8
+  tools:
+  - files
+  - task_board
+  - messaging
+  permissions:
+  - assign_task
+  - propose_protocol
+  - approve_protocol
+  - review
+- id: member-2
+  display_name: Quality Reviewer
+  role: quality_reviewer
+  role_mandate: Contribute quality_reviewer expertise to the research report.
+  provider: local
+  skills:
+    research: 0.73
+    review: 0.8
+  profile:
+    openness: 0.8
+    conscientiousness: 0.8
+  tools:
+  - files
+  - task_board
+  - messaging
+  permissions:
+  - assign_task
+  - propose_protocol
+  - approve_protocol
+  - review
+- id: member-3
+  display_name: Data Engineer
+  role: data_engineer
+  role_mandate: Contribute data_engineer expertise to the research report.
+  provider: local
+  skills:
+    research: 0.76
+    review: 0.8
+  profile:
+    openness: 0.8
+    conscientiousness: 0.8
+  tools:
+  - files
+  - task_board
+  - messaging
+  permissions:
+  - assign_task
+  - propose_protocol
+  - approve_protocol
+  - review
+- id: member-4
+  display_name: Analyst
+  role: analyst
+  role_mandate: Contribute analyst expertise to the research report.
+  provider: local
+  skills:
+    research: 0.7899999999999999
+    review: 0.8
+  profile:
+    openness: 0.8
+    conscientiousness: 0.8
+  tools:
+  - files
+  - task_board
+  - messaging
+  permissions:
+  - assign_task
+  - propose_protocol
+  - approve_protocol
+  - review
+- id: member-5
+  display_name: Librarian
+  role: librarian
+  role_mandate: Contribute librarian expertise to the research report.
+  provider: local
+  skills:
+    research: 0.82
+    review: 0.8
+  profile:
+    openness: 0.8
+    conscientiousness: 0.8
+  tools:
+  - files
+  - task_board
+  - messaging
+  permissions:
+  - assign_task
+  - propose_protocol
+  - approve_protocol
+  - review
+- id: member-6
+  display_name: Experimenter
+  role: experimenter
+  role_mandate: Contribute experimenter expertise to the research report.
+  provider: local
+  skills:
+    research: 0.85
+    review: 0.8
+  profile:
+    openness: 0.8
+    conscientiousness: 0.8
+  tools:
+  - files
+  - task_board
+  - messaging
+  permissions:
+  - assign_task
+  - propose_protocol
+  - approve_protocol
+  - review
+- id: member-7
+  display_name: Technical Writer
+  role: technical_writer
+  role_mandate: Contribute technical_writer expertise to the research report.
+  provider: local
+  skills:
+    research: 0.8799999999999999
+    review: 0.8
+  profile:
+    openness: 0.8
+    conscientiousness: 0.8
+  tools:
+  - files
+  - task_board
+  - messaging
+  permissions:
+  - assign_task
+  - propose_protocol
+  - approve_protocol
+  - review
+- id: member-8
+  display_name: Project Manager
+  role: project_manager
+  role_mandate: Contribute project_manager expertise to the research report.
+  provider: local
+  skills:
+    research: 0.9099999999999999
+    review: 0.8
+  profile:
+    openness: 0.8
+    conscientiousness: 0.8
+  tools:
+  - files
+  - task_board
+  - messaging
+  permissions:
+  - assign_task
+  - propose_protocol
+  - approve_protocol
+  - review
+tools:
+  builtins:
+  - files
+  - task_board
+  - messaging
+tasks:
+- id: research-note
+  title: Write and review the initial research note
+  description: Compare approaches and record a conclusion with supporting evidence.
+  priority: 5
+  owner: member-1
+  collaborators:
+  - member-2
+  - member-3
+  expected_deliverables:
+  - research-note
+  - review-report
+  acceptance_criteria:
+  - Conclusion has supporting evidence
+governance:
+  approval_mode: auto
+  approver_members:
+  - member-1
+  - member-2
+  quorum: 2
+protocols:
+  initial: []
+learning:
+  reflection:
+    enabled: true
+    cadence_ticks: 6
 runtime:
-  scenario: org_default
-  baseline: b3
   seed: 42
   ticks: 72
-  profile_causality: source_recorded
-  capability_transfer: {}
+  decision_mode: profile_policy
+observability:
+  public_trace: true
+  inspector: true

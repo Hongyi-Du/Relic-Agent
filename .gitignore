@@ -7,3 +7,6 @@ __pycache__/
 build/
 dist/
 outputs/
+
+# Runtime-generated product exports from the source preset.
+docs/product_exports/

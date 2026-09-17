@@ -29,6 +29,7 @@ const panelCopy = {
 };
 
 const idKeys = [
+  ["lineage_id", "lifecycle record"],
   ["organization_id", "organization"],
   ["agent_id", "member"],
   ["task_id", "task"],
@@ -144,7 +145,7 @@ function organization(frame = currentFrame()) {
 function allEvents() {
   if (!state.trace) return [];
   return state.trace.frames.flatMap((frame, frameIndex) =>
-    asArray(frame.events).map((event) => ({ event, frameIndex })),
+    [...asArray(frame.events), ...asArray(frame.tool_events)].map((event) => ({ event, frameIndex })),
   );
 }
 
@@ -205,6 +206,9 @@ function keyValueCard(title, identity, rows, labels = []) {
 function renderOverview(container) {
   const frame = currentFrame();
   const org = organization(frame);
+  if (org.config_summary) {
+    container.append(keyValueCard("Organization configuration", null, Object.entries(org.config_summary)));
+  }
   const agents = asArray(org.agents);
   const tasks = asArray(org.tasks);
   const protocols = asArray(org.protocols);
@@ -297,6 +301,8 @@ function renderMembers(container) {
       { id: agent.agent_id, kind: "member" },
       [
         ["Role", agent.role],
+        ["Provider / model", [agent.provider, agent.model].filter(Boolean).join(" / ")],
+        ["Permissions", agent.permissions],
         ["Status", agent.status],
         ["Current tasks", taskLinks.childNodes.length ? taskLinks : "None"],
         ["Recent decision", recent?.chosen_action_id || "No action"],
@@ -384,7 +390,7 @@ function renderEventList(items) {
     append(
       summary,
       element("strong", "", titleCase(event.event_type)),
-      element("span", "", event.payload?.summary || textValue(event.object_ids, "No public summary")),
+      element("span", "", event.payload?.summary || (event.tool_id ? `${event.tool_id}: ${event.status}` : textValue(event.object_ids, "No public summary"))),
     );
     append(
       button,
@@ -442,6 +448,7 @@ function renderReflections(container) {
     ),
   );
   container.append(notice, sectionTitle("Public reflection outcomes"));
+  renderGenericCollection(container, currentFrame().lineage, "No lifecycle identifiers recorded yet.");
   const proposals = asArray(organization().proposals).filter(
     (item) => item.source_reflection_id || item.source_wish_id || asArray(item.source_wish_ids).length,
   );
@@ -556,6 +563,7 @@ function renderProtocols(container) {
           ["Trigger", protocol.trigger_condition || protocol.proposal_event_id],
           ["Scope", protocol.scope],
           ["Adoption", protocol.adoption_status],
+          ["Origin", protocol.origin],
           ["Activation", protocol.first_tick],
           [
             "Usage records",
@@ -691,7 +699,9 @@ function frameObjects(frame, trace = state.trace) {
     [org.protocols, "protocol"],
     [org.artifacts || frame.artifacts, "artifact"],
     [frame.events, "event"],
+    [frame.tool_events, "tool event"],
     [frame.episodes, "episode"],
+    [frame.lineage, "lifecycle record"],
     [frame.evaluation_annotations || org.evidence, "evidence"],
   ].forEach(([values, fallbackKind]) => addCollectionObjects(objects, values, fallbackKind));
 
@@ -866,7 +876,7 @@ function navCounts() {
     tasks: asArray(org.tasks).length,
     timeline: allEvents().filter((item) => item.frameIndex <= state.frameIndex).length,
     episodes: asArray(frame.episodes).length,
-    reflections: asArray(org.proposals).filter((item) => item.source_reflection_id).length,
+    reflections: asArray(frame.lineage).filter((item) => item.kind === "reflection").length || asArray(org.proposals).filter((item) => item.source_reflection_id).length,
     proposals: asArray(org.proposals).length,
     governance: asArray(org.proposals).length,
     protocols: asArray(org.protocols).length,
