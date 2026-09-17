@@ -67,6 +67,35 @@ def test_provider_credentials_fail_only_on_actual_use(tmp_path, monkeypatch):
         world.step()
 
 
+def test_live_owner_checks_acceptance_without_collaborators(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    data = _base()
+    data['tasks'][0]['collaborators'] = []
+    data['providers']['local'] = {'type': 'generic_http', 'default_model': 'reviewing-owner'}
+    world = build_generic_world(_config(tmp_path, data))
+    reviews = iter([{'approved': False, 'feedback': 'Add supporting evidence'},
+                    {'approved': True, 'feedback': 'Evidence is present'}])
+    prompts = []
+
+    def assess(system, user, schema):
+        prompts.append((system, user))
+        return next(reviews)
+
+    monkeypatch.setattr(world.provider_registry, 'client_for_agent', lambda aid: SimpleNamespace(
+        generate_text=lambda *args: 'Draft evidence and conclusion', generate_json=assess))
+    world.work_on_generic_task('researcher', 'research-note')
+    first = world.complete_generic_task('researcher', 'research-note', {})
+    assert first['status'] == 'pending'
+    assert 'research-note' in world.task_revision_requests
+    assert world.tasks['research-note'].status.value != 'done'
+    world.work_on_generic_task('researcher', 'research-note')
+    second = world.complete_generic_task('researcher', 'research-note', {})
+    assert second['status'] == 'completed'
+    assert len(prompts) == 2
+    assert 'Conclusion has supporting evidence' in str(prompts)
+    assert 'Draft evidence and conclusion' in str(prompts)
+
+
 def test_observability_and_private_workspace_have_effect(tmp_path, monkeypatch):
     data = _base()
     data['providers']['local']['api_key_env'] = 'TEST_RELIC_SECRET'

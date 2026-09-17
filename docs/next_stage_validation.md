@@ -23,7 +23,7 @@ settings do not redefine these experimental conditions.
 | Inspector config/model/tool display | Inspector assets; frontend and HTTP tests |
 | Source B3 compatibility | `configs/source-b3.yaml`; source conformance suites |
 
-The final integration suite passed **238 tests, with one intentional skip**, on
+The final integration suite passed **242 tests, with one intentional skip**, on
 2026-09-17. The skipped test requires `society_core`, which is deliberately not
 vendored. The suite includes the 336-tick source B3 structural goldens at all
 three reference seeds, local Inspector HTTP tests, and local HTTP provider
@@ -36,6 +36,9 @@ seven focused governance checks cover real enforcement/use, permission and
 quorum checks, review latency, successful amendment and retirement, and registry
 identity preservation. Ruff and `git diff --check` passed. Socket tests ran with
 local socket access; restricted-sandbox socket errors are not provider failures.
+Final review also verified owner assessment for live tasks without collaborators,
+protocol gates within learned tools, successful read/message use, and accurate
+pending status for partially completed composed tools.
 
 A clean local clone of implementation commit `eccde06` built a wheel, which was
 installed with its declared dependencies in a new Python 3.12 virtualenv.

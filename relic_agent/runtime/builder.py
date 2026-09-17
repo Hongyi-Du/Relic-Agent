@@ -287,6 +287,9 @@ class GenericExecution:
             step_results.append(outcome)
             if outcome.get("status") != "completed":
                 break
+        if not step_results:
+            return {"status": "failed", "error_type": "tool_declares_no_steps"}
+        final = step_results[-1]
         after = self._work_snapshot(world)
         changed = before != after
         if changed:
@@ -302,6 +305,9 @@ class GenericExecution:
                     result.created_objects.append(row[0])
                 elif before_file_map[row[0]] != row and row[0] not in result.modified_objects:
                     result.modified_objects.append(row[0])
+        # Read-only operations and messages are real uses too. Preserve the
+        # final status when a composition makes progress but cannot finish.
+        if changed or any(step.get("status") == "completed" for step in step_results):
             touched = list(dict.fromkeys(result.modified_objects + result.created_objects))
             result.events.append({
                 "type": "tool_use_event",
@@ -312,19 +318,31 @@ class GenericExecution:
                 "task_id": task_id,
                 "object_id": touched[0] if touched else task_id,
                 "affected": touched[:5],
+                "status": final["status"],
+                **({"error_type": final["error_type"]} if final.get("error_type") and final["status"] != "completed" else {}),
             })
             result.graph_edges.append((aid, "used_tool", tool.tool_id))
-        else:
-            result.failure_reason = "tool_steps_changed_nothing"
-        if not step_results:
-            result.failure_reason = "tool_declares_no_steps"
-            return {"status": "failed", "error_type": result.failure_reason}
-        if not changed:
-            return {"status": "failed", "error_type": result.failure_reason}
-        final = step_results[-1]
-        return final if isinstance(final, dict) else {"status": "completed" if changed else "failed"}
+        return final
 
     def _run_learned_step(self, aid, action, arguments, task_id, world, result):
+        lifecycle = getattr(world, "generic_lifecycle", None)
+        normalized = action.casefold()
+        # Completion already crosses the task-board lifecycle boundary. Other
+        # composed task actions must obey the same protocol gates as direct work.
+        if lifecycle is None or normalized not in {"claim_task", "work_on_task", "review_doc"}:
+            return self._run_learned_operation(aid, action, arguments, task_id, world)
+        permitted = lifecycle.before_action(aid, normalized, task_id)
+        outcome = (self._run_learned_operation(aid, action, arguments, task_id, world)
+                   if permitted else {"status": "failed", "error_type": "ProtocolBlocked"})
+        step = ExecutionResult(action_id=result.action_id, agent_id=aid, action_type=normalized,
+                               success=outcome.get("status") == "completed",
+                               failure_reason=outcome.get("error_type", ""))
+        lifecycle.after_action(aid, normalized, task_id, step)
+        result.events.extend(step.events)
+        result.graph_edges.extend(step.graph_edges)
+        return outcome
+
+    def _run_learned_operation(self, aid, action, arguments, task_id, world):
         """Execute one allow-listed generic step and preserve its public status."""
         normalized = action.casefold()
         if normalized in _LEARNED_TASK_ACTIONS:
@@ -524,6 +542,12 @@ class GenericOrgWorld(OrgWorld):
         spec = self.task_specs[task_id]
         if aid not in spec["collaborators"]:
             raise PermissionError("reviewer is not a collaborator")
+        if "review" not in self.tool_registry.permissions(aid):
+            raise PermissionError("review permission is required")
+        return self._assess_generic_task(aid, task_id)
+
+    def _assess_generic_task(self, aid, task_id):
+        """Assess criteria through the selected reviewer or the sole owner's route."""
         client = self.provider_registry.client_for_agent(aid)
         route = self.provider_registry.resolve(aid)
         provider = self.generic_config["providers"][route.provider]
@@ -563,6 +587,14 @@ class GenericOrgWorld(OrgWorld):
             return {"status": "pending", "error_type": "PendingDependencies"}
         if not set(self.task_specs[task_id]["collaborators"]) <= self.task_reviews.get(task_id, set()):
             return {"status": "pending", "error_type": "PendingReview"}
+        spec = self.task_specs[task_id]
+        if not spec["collaborators"] and spec["acceptance_criteria"]:
+            route = self.provider_registry.resolve(aid)
+            provider = self.generic_config["providers"][route.provider]
+            if provider["type"] not in {"mock", "deterministic"}:
+                assessment = self._assess_generic_task(aid, task_id)
+                if assessment["status"] != "completed":
+                    return assessment
         task.status = TaskStatus.DONE
         task.progress_score = 1.0
         task.history.append({"tick": self.world_tick, "event": "completed", "agent_id": aid})

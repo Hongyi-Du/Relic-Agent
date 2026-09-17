@@ -80,5 +80,13 @@ The generic executor composes only existing generic operations named in
 `required_actions` (`claim_task`, `work_on_task`, `review_doc`,
 `complete_task`, `send_message`, the built-in `files`/`task_board`/
 `messaging`/`search` operations, or a configured plugin). Unknown action names,
-missing grants, and nested learned-tool calls fail closed. A `tool_use_event` is
-published only when the composition changes a task or workspace file.
+missing grants, and nested learned-tool calls fail closed. A `tool_use_event`
+records executed work, including reads and messages, with the composition's
+final status. A partially completed tool waiting for review remains `pending`.
+Composed task actions obey the same protocol gates as directly selected actions.
+
+Live task completion assesses acceptance criteria through the configured
+collaborators. When there are no collaborators, the owner performs that model
+assessment. Rejection requests a revised deliverable and another assessment;
+merely creating a file does not satisfy the live completion gate. The mock
+examples use explicitly deterministic draft and review fixtures.

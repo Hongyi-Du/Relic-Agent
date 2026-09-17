@@ -125,7 +125,7 @@ def test_adopted_tool_spec_is_catalogued_composed_and_permission_checked(tmp_pat
     assert not any(event["type"] == "tool_use_event" for event in denied.events)
 
 
-def test_learned_tool_without_work_change_has_no_tool_use_event(tmp_path):
+def test_learned_message_is_a_real_use_without_task_or_file_changes(tmp_path):
     world = build_generic_world(_config(tmp_path, learned_permission=True))
     world.proposal_manager.tools["notify"] = ToolSpec(
         tool_id="notify",
@@ -139,9 +139,69 @@ def test_learned_tool_without_work_change_has_no_tool_use_event(tmp_path):
         ActionCandidate("use_tool", {"tool_id": "notify", "arguments": {"text": "hello"}}),
         world,
     )
+    assert result.success
+    assert any(event["type"] == "tool_use_event" and event["status"] == "completed"
+               for event in result.events)
+    world.proposal_manager.tools["notify"].required_actions = []
+    empty = GenericExecution().execute("researcher", ActionCandidate(
+        "use_tool", {"tool_id": "notify"}), world)
+    assert not empty.success
+    assert empty.failure_reason == "tool_declares_no_steps"
+    assert not any(event["type"] == "tool_use_event" for event in empty.events)
+
+
+def test_partial_learned_tool_preserves_pending_status_in_public_trace(tmp_path):
+    from relic_agent.source_host.projection import project_public_frame
+    world = build_generic_world(_config(tmp_path))
+    world.proposal_manager.tools["draft-and-complete"] = ToolSpec(
+        tool_id="draft-and-complete", name="Draft and complete",
+        required_actions=["work_on_task", "complete_task"])
+    result = GenericExecution().execute("researcher", ActionCandidate("use_tool", {
+        "tool_id": "draft-and-complete", "task_id": "research-note"}), world)
     assert not result.success
-    assert result.failure_reason == "tool_steps_changed_nothing"
-    assert not any(event["type"] == "tool_use_event" for event in result.events)
+    assert result.failure_reason == "PendingReview"
+    world.events.extend(result.events)
+    frame = project_public_frame(world, sequence=0, organization_id="org", organization_name="Org",
+                                 action_start=0, protocol_event_start=0)
+    use = next(event for event in frame["tool_events"] if event["tool_id"] == "draft-and-complete")
+    assert use["status"] == "pending"
+    assert use["error_type"] == "PendingReview"
+
+
+def test_read_only_learned_tool_records_use(tmp_path):
+    world = build_generic_world(_config(tmp_path))
+    world.tool_registry.execute("researcher", "files", {
+        "operation": "write", "id": "note", "content": "known evidence"})
+    world.proposal_manager.tools["read-note"] = ToolSpec(
+        tool_id="read-note", name="Read evidence", required_actions=["files.read"])
+    result = GenericExecution().execute("researcher", ActionCandidate("use_tool", {
+        "tool_id": "read-note", "arguments": {"id": "note"}}), world)
+    assert result.success
+    assert any(event["type"] == "tool_use_event" for event in result.events)
+
+
+def test_learned_work_cannot_bypass_an_initial_protocol(tmp_path):
+    data = yaml.safe_load((ROOT / "configs/minimal.yaml").read_text())
+    data["protocols"]["initial"] = [{"id": "approved-work", "name": "Approve before drafting",
+        "definition": {"affected_actions": ["work_on_task"],
+                       "affected_artifacts": ["approval-note"], "enforcement_action": "block"}}]
+    path = tmp_path / "organization.yaml"
+    path.write_text(yaml.safe_dump(data))
+    world = build_generic_world(load_config(path))
+    world.proposal_manager.tools["draft"] = ToolSpec(
+        tool_id="draft", name="Draft", required_actions=["work_on_task"])
+    blocked = GenericExecution().execute("researcher", ActionCandidate(
+        "use_tool", {"tool_id": "draft", "task_id": "research-note"}), world)
+    assert not blocked.success
+    assert "research-note" not in world.company.files
+    assert any(event["type"] == "protocol_enforcement_event" for event in blocked.events)
+    world.company.register_file(FileObject(object_id="approval-note", owner_id="researcher",
+        visibility=Visibility.TEAM, raw_payload="Drafting approved"))
+    allowed = GenericExecution().execute("researcher", ActionCandidate(
+        "use_tool", {"tool_id": "draft", "task_id": "research-note"}), world)
+    assert allowed.success
+    assert "research-note" in world.company.files
+    assert any(event["type"] == "protocol_use_event" for event in allowed.events)
 
 
 def test_metadata_completion_uses_the_same_lifecycle_boundary(tmp_path):
