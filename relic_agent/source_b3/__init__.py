@@ -19,6 +19,16 @@ from relic_agent.source_b3.reflection import (
     SourceB3ReflectionLifecycleAdapter,
     source_b3_reflection_provenance,
 )
+from relic_agent.source_b3.growth.lifecycle import (
+    SourceB3GrowthHostUnavailableError,
+    SourceB3GrowthLifecycleAdapter,
+)
+from relic_agent.source_b3.growth.provenance import source_b3_growth_provenance
+from relic_agent.source_b3.policy import (
+    SourceB3PolicyHostUnavailableError,
+    SourceB3PolicyLifecycleAdapter,
+    source_b3_policy_provenance,
+)
 from relic_agent.source_b3.proposals import (
     Proposal,
     ProtocolSpec,
@@ -33,10 +43,16 @@ __all__ = [
     "SourceB3EpisodeLifecycleAdapter",
     "SourceB3ReflectionHostUnavailableError",
     "SourceB3ReflectionLifecycleAdapter",
+    "SourceB3GrowthHostUnavailableError",
+    "SourceB3GrowthLifecycleAdapter",
+    "SourceB3PolicyHostUnavailableError",
+    "SourceB3PolicyLifecycleAdapter",
     "Proposal",
     "ProtocolSpec",
     "ToolSpec",
     "source_b3_proposal_provenance",
     "source_b3_episode_provenance",
     "source_b3_reflection_provenance",
+    "source_b3_growth_provenance",
+    "source_b3_policy_provenance",
 ]

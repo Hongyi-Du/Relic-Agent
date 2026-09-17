@@ -63,3 +63,7 @@ select = ["E4", "E7", "E9", "F"]
 # imports verbatim; local lint does not rewrite vendored behavior.
 "relic_agent/source_b3/reflection/manager.py" = ["F401"]
 "relic_agent/source_b3/reflection/batch_manager.py" = ["F401"]
+# The growth closure is source-pinned apart from recorded import rewrites.
+# Preserve upstream's historical unused names rather than changing its blob.
+"relic_agent/source_b3/growth/objects.py" = ["F401"]
+"relic_agent/source_b3/growth/appraiser.py" = ["F841"]

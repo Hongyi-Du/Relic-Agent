@@ -1,8 +1,8 @@
-"""Compatibility-only deterministic mock runtime.
+"""Compatibility trace shell with no active HCI action execution.
 
 This runner is retained while the source HCI host adapter is ported. It keeps
-the public CLI, trace contract, Inspector, and launchers runnable, but it is
-not an authoritative B3/HCI execution runtime. Its emitted envelopes are
+the public CLI, trace contract, Inspector, and launchers runnable, but it
+does not select or execute organization actions. Its tick envelopes are
 validated by the vendored source core in observation-only mode.
 """
 
@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import os
-import random
 import re
 import tempfile
 import uuid
@@ -20,13 +19,14 @@ from pathlib import Path
 from typing import Any
 
 from relic_agent.config import OrganizationConfig
-from relic_agent.decision import Candidate, DecisionTrace, OrganizationPolicy
 from relic_agent.episodes import EpisodeManager, OrgEpisode
 from relic_agent.events import Event, EventStore
 from relic_agent.governance import GovernanceManager
 from relic_agent.organization import AgentState, OrganizationState, Task, TaskStatus
 from relic_agent.reflection import ReflectionManager
 from relic_agent.replay.trace import build_trace
+from relic_agent.source_b3.growth.lifecycle import SourceB3GrowthLifecycleAdapter
+from relic_agent.source_b3.policy import SourceB3PolicyLifecycleAdapter
 from relic_agent.source_core import SourceCoreObservationBridge
 
 RUN_SCHEMA_VERSION = "relic-agent-run-v1"
@@ -92,10 +92,10 @@ class OrganizationRuntime:
             )
             for item in config.tasks
         }
-        for task in self.state.tasks.values():
-            if task.owner_id:
-                task.status = TaskStatus.IN_PROGRESS
-                self.state.agents[task.owner_id].active_task_ids.append(task.task_id)
+        # An owner in the release config is static input, not evidence that a
+        # source action has claimed or started the task.  The compatibility
+        # shell must preserve that distinction until a real HCI host executes
+        # an action, so it leaves the source-neutral task state untouched.
         self.events = EventStore()
         self.episodes = EpisodeManager()
         self.reflection = ReflectionManager()
@@ -116,18 +116,14 @@ class OrganizationRuntime:
             reflection_manager=self.reflection,
             episode_manager=self.episodes,
         )
-        self.policy = OrganizationPolicy(profile_conditioning=True)
-        self.decision_traces: list[DecisionTrace] = []
+        # These adapters are intentionally unbound in the release shell. They
+        # make the precise source capabilities and host requirements visible in
+        # every run manifest without turning configured tasks into fake HCI
+        # actions, growth signals, or policy decisions.
+        self.growth = SourceB3GrowthLifecycleAdapter()
+        self.policy = SourceB3PolicyLifecycleAdapter()
         self.frames: list[dict[str, Any]] = []
-        self._recent_events: dict[str, list[Event]] = {
-            agent_id: [] for agent_id in self.state.agents
-        }
-        self._rngs = {
-            agent_id: random.Random(f"{config.runtime.seed}:{agent_id}")
-            for agent_id in self.state.agents
-        }
         self._last_frame_event_index = 0
-        self._last_frame_decision_index = 0
         self._last_frame_protocol_event_index = 0
         self._source_core_bridge: SourceCoreObservationBridge | None = None
 
@@ -165,10 +161,7 @@ class OrganizationRuntime:
             trace = self._write_public_trace(trace_path, actual_run_id)
             for tick in range(1, total_ticks + 1):
                 self.state.tick = tick
-                for agent_id in sorted(self.state.agents):
-                    self._step_agent(self.state.agents[agent_id])
-                self._maybe_reflect_and_propose()
-                self._adopt_ready_proposals()
+                self._advance_trace_tick()
                 self._source_core_bridge.complete_tick(self.state.tick)
                 self._capture_frame(force=self.frames[-1]["tick"] != self.state.tick)
                 trace = self._write_public_trace(trace_path, actual_run_id)
@@ -219,250 +212,17 @@ class OrganizationRuntime:
             adopted_protocol_count=adopted,
         )
 
-    def _step_agent(self, agent: AgentState) -> None:
-        candidates = self._candidates(agent)
-        chosen, trace = self.policy.select(
-            tick=self.state.tick,
-            agent=agent,
-            candidates=candidates,
-            rng=self._rngs[agent.agent_id],
-        )
-        self.decision_traces.append(trace)
-        if chosen is None:
-            return
-        if chosen.action_id == "approve_proposal":
-            self._approve(agent, chosen.object_id)
-        elif chosen.action_id == "claim_task":
-            self._claim_task(agent, chosen.object_id)
-        elif chosen.action_id == "work_task":
-            self._work_task(agent, chosen.object_id)
-        elif chosen.action_id == "use_protocol":
-            self._use_protocol(agent, chosen.object_id)
+    def _advance_trace_tick(self) -> None:
+        """Advance the trace clock without selecting or executing an action.
 
-    def _candidates(self, agent: AgentState) -> list[Candidate]:
-        approval_candidates = []
-        for proposal in self.governance.proposals.values():
-            if (
-                proposal.status == "under_review"
-                and agent.agent_id in proposal.approval_required_from
-                and agent.agent_id not in proposal.approved_by
-            ):
-                approval_candidates.append(
-                    Candidate(
-                        action_id="approve_proposal",
-                        object_id=proposal.proposal_id,
-                        features={
-                            "proposal_endorsement": float(proposal.usefulness_score or 0.0),
-                            "proposal_skepticism": float(proposal.risk_score or 0.0),
-                            "institutional_memory_gain": 0.8,
-                        },
-                    )
-                )
-        if approval_candidates:
-            return approval_candidates
-
-        candidates: list[Candidate] = []
-        for task in self.state.tasks.values():
-            status = task.status.value if isinstance(task.status, TaskStatus) else str(task.status)
-            if task.owner_id == agent.agent_id and status not in {
-                "done",
-                "merged",
-                "released",
-                "abandoned",
-            }:
-                match = self._skill_match(agent, task)
-                candidates.append(
-                    Candidate(
-                        action_id="work_task",
-                        object_id=task.task_id,
-                        features={
-                            "progress_gain": 0.9,
-                            "task_priority": task.priority / 5.0,
-                            "skill_match": match,
-                            "failure_risk_from_low_skill": 1.0 - match,
-                            "attention_cost": 0.15,
-                        },
-                    )
-                )
-            elif task.owner_id is None and status == "open":
-                match = self._skill_match(agent, task)
-                candidates.append(
-                    Candidate(
-                        action_id="claim_task",
-                        object_id=task.task_id,
-                        features={
-                            "dependency_unlock": 0.9,
-                            "task_priority": task.priority / 5.0,
-                            "skill_match": match,
-                            "role_affinity": match,
-                            "coordination_gain": 0.4,
-                        },
-                    )
-                )
-        if candidates:
-            return candidates
-        for protocol in self.governance.protocol_registry.protocols.values():
-            if protocol.adoption_status == "adopted":
-                candidates.append(
-                    Candidate(
-                        action_id="use_protocol",
-                        object_id=protocol.protocol_id,
-                        features={
-                            "protocol_use_potential": 0.8,
-                            "institutional_memory_gain": 0.5,
-                            "coordination_gain": 0.3,
-                        },
-                    )
-                )
-        return candidates
-
-    @staticmethod
-    def _skill_match(agent: AgentState, task: Task) -> float:
-        if not task.required_skills:
-            return 0.5
-        return sum(agent.skill(skill) for skill in task.required_skills) / len(task.required_skills)
-
-    def _approve(self, agent: AgentState, proposal_id: str) -> None:
-        proposal = self.governance.approve(proposal_id, agent.agent_id, tick=self.state.tick)
-        self._emit(
-            event_type="proposal_approved",
-            actor_id=agent.agent_id,
-            object_ids=(proposal_id,),
-            payload={"summary": f"{agent.display_name} approved {proposal.title}."},
-        )
-
-    def _claim_task(self, agent: AgentState, task_id: str) -> None:
-        task = self.state.tasks[task_id]
-        if task.owner_id is not None:
-            return
-        task.owner_id = agent.agent_id
-        task.status = TaskStatus.IN_PROGRESS
-        task.history.append(
-            {"tick": self.state.tick, "event": "claimed", "agent_id": agent.agent_id}
-        )
-        if task_id not in agent.active_task_ids:
-            agent.active_task_ids.append(task_id)
-        self._emit(
-            event_type="task_started",
-            actor_id=agent.agent_id,
-            object_ids=(task_id,),
-            payload={"summary": f"{agent.display_name} claimed {task.title}.", "title": task.title},
-        )
-
-    def _work_task(self, agent: AgentState, task_id: str) -> None:
-        task = self.state.tasks[task_id]
-        if task.owner_id != agent.agent_id:
-            return
-        if not any(
-            event.event_type == "task_started" and task_id in event.object_ids
-            for event in self.events.events
-        ):
-            self._emit(
-                event_type="task_started",
-                actor_id=agent.agent_id,
-                object_ids=(task_id,),
-                payload={
-                    "summary": f"{agent.display_name} started {task.title}.",
-                    "title": task.title,
-                },
-            )
-        progress = min(1.0, task.progress_score + 0.5)
-        adopted_protocol = self._adopted_protocol_id()
-        if progress >= 1.0 and adopted_protocol is None:
-            task.progress_score = 0.75
-            task.status = TaskStatus.BLOCKED
-            task.history.append(
-                {"tick": self.state.tick, "event": "blocked_pending_review_protocol"}
-            )
-            self._emit(
-                event_type="task_blocked",
-                actor_id=agent.agent_id,
-                object_ids=(task_id,),
-                payload={"summary": f"{task.title} needs an accountable peer-review rule."},
-            )
-            return
-        task.progress_score = progress
-        task.status = TaskStatus.IN_PROGRESS
-        task.actual_effort += 1.0
-        self._emit(
-            event_type="task_progressed",
-            actor_id=agent.agent_id,
-            object_ids=(task_id,),
-            payload={
-                "summary": f"{task.title} reached {progress:.0%} progress.",
-                "progress": progress,
-            },
-        )
-        if progress >= 1.0 and adopted_protocol is not None:
-            self.governance.protocol_registry.use(
-                agent.agent_id,
-                adopted_protocol,
-                tick=self.state.tick,
-                context_id=f"task-completion:{task_id}",
-                task_id=task_id,
-            )
-            self._emit(
-                event_type="protocol_used",
-                actor_id=agent.agent_id,
-                object_ids=(adopted_protocol, task_id),
-                payload={"summary": f"The adopted protocol governed completion of {task.title}."},
-            )
-            task.status = TaskStatus.DONE
-            task.history.append(
-                {"tick": self.state.tick, "event": "completed", "protocol_id": adopted_protocol}
-            )
-            if task_id in agent.active_task_ids:
-                agent.active_task_ids.remove(task_id)
-            self._emit(
-                event_type="task_completed",
-                actor_id=agent.agent_id,
-                object_ids=(task_id, adopted_protocol),
-                payload={"summary": f"{task.title} completed with peer-review governance."},
-            )
-
-    def _use_protocol(self, agent: AgentState, protocol_id: str) -> None:
-        self.governance.protocol_registry.use(
-            agent.agent_id,
-            protocol_id,
-            tick=self.state.tick,
-            context_id=f"organization-cycle:{self.state.tick}",
-        )
-        self._emit(
-            event_type="protocol_used",
-            actor_id=agent.agent_id,
-            object_ids=(protocol_id,),
-            payload={"summary": f"{agent.display_name} used an adopted organization protocol."},
-        )
-
-    def _maybe_reflect_and_propose(self) -> None:
-        """Keep mock task events out of the source reflection lifecycle.
-
-        Reflection requires a terminal HCI episode, mounted ``OrgWorld``, and
-        OpenAI-compatible provider.  The release-shell event ledger has none
-        of those inputs, so even private heuristic cognition is disabled rather
-        than generated and hidden from ``relic-trace-v1``.
+        This deliberately replaces the former per-agent compatibility action
+        loop.  HCI selection needs a source candidate pool, OrgWorld, work
+        rhythm, attractor guard, and execution adapter.  A config task or a
+        shell tick cannot stand in for any of those inputs.  The only state
+        transition here is the already-recorded clock value; source-core then
+        records its append-only tick envelope separately.
         """
 
-        return
-
-    def _adopt_ready_proposals(self) -> None:
-        for proposal in list(self.governance.proposals.values()):
-            if not self.governance.ready(proposal, tick=self.state.tick):
-                continue
-            protocol_id = self.governance.adopt(proposal.proposal_id, tick=self.state.tick)
-            self.state.protocols = self.governance.protocol_registry.protocols
-            self.state.proposal_object_id_projection = self.governance.public_proposal_object_ids()
-            self._emit(
-                event_type="protocol_adopted",
-                actor_id=proposal.approved_by[0] if proposal.approved_by else "",
-                object_ids=(protocol_id, proposal.proposal_id),
-                payload={"summary": f"The organization adopted {proposal.title}."},
-            )
-
-    def _adopted_protocol_id(self) -> str | None:
-        for protocol in self.governance.protocol_registry.protocols.values():
-            if protocol.adoption_status == "adopted":
-                return protocol.protocol_id
         return None
 
     def _emit(
@@ -482,9 +242,6 @@ class OrganizationRuntime:
             payload=payload,
             visibility=visibility,
         )
-        if actor_id in self._recent_events:
-            self._recent_events[actor_id].append(event)
-            self._recent_events[actor_id] = self._recent_events[actor_id][-12:]
         if self._source_core_bridge is not None:
             self._source_core_bridge.publish_legacy_event(event)
         if visibility in {"organization", "public"}:
@@ -493,19 +250,9 @@ class OrganizationRuntime:
 
     def _capture_frame(self, *, force: bool = False) -> None:
         events = self.events.public_since(self._last_frame_event_index)
-        decisions = [
-            {
-                "decision_id": f"decision_{index:06d}",
-                "tick": trace.tick,
-                "agent_id": trace.agent_id,
-                "chosen_action_id": trace.chosen_action_id,
-                "chosen_object_id": trace.chosen_object_id,
-            }
-            for index, trace in enumerate(
-                self.decision_traces[self._last_frame_decision_index :],
-                start=self._last_frame_decision_index + 1,
-            )
-        ]
+        # The compatibility shell never publishes an action decision. Source
+        # decisions can only come from a future mounted HCI action host.
+        decisions: list[dict[str, Any]] = []
         governance_events = [
             {
                 "event_id": event.event_id,
@@ -522,7 +269,6 @@ class OrganizationRuntime:
         if not force and not events and not decisions and not governance_events:
             return
         self._last_frame_event_index = len(self.events.events)
-        self._last_frame_decision_index = len(self.decision_traces)
         self._last_frame_protocol_event_index = len(self.governance.protocol_registry.events)
         sequence = len(self.frames)
         self.frames.append(
@@ -630,12 +376,21 @@ class OrganizationRuntime:
                 "seed": self.config.runtime.seed,
                 "ticks": self.state.tick,
                 "provider_calls_made": 0,
-                "authority": "legacy_compatibility_runtime",
+                "authority": "compatibility_trace_shell_unbound",
+                "action_selection": "unbound_no_source_orgworld",
+                "action_execution": "unavailable_fail_closed",
+                "workflow_acceptance": "unavailable_fail_closed",
+                "workflow_acceptance_reason": (
+                    "source_orgworld_action_host_not_mounted"
+                ),
+                "paper_result_evidence": "not_produced_by_compatibility_shell",
             },
             "source_core": source_core.status().as_dict(),
             "source_episode_lifecycle": self.episodes.status().as_dict(),
             "source_reflection_lifecycle": self.reflection.status().as_dict(),
             "source_proposal_lifecycle": self.governance.source_status(),
+            "source_growth_lifecycle": self.growth.status().as_dict(),
+            "source_policy_lifecycle": self.policy.status().as_dict(),
             "outputs": {
                 "config_snapshot": "config.yaml",
                 "status": "status.json",

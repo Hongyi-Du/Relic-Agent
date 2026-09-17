@@ -32,33 +32,41 @@ def _write(path: Path, payload: dict) -> None:
 
 
 def _last_public_event(trace: dict) -> dict:
-    return next(frame["events"][0] for frame in reversed(trace["frames"]) if frame["events"])
+    for frame in reversed(trace["frames"]):
+        if frame["events"]:
+            return frame["events"][0]
+    frame = trace["frames"][-1]
+    event = {
+        "event_id": "event_trace_contract_fixture",
+        "tick": frame["tick"],
+        "event_type": "public_notice",
+        "actor_id": "builder",
+        "object_ids": ["task_demo"],
+        "payload": {"summary": "Trace-contract fixture event."},
+        "visibility": "organization",
+    }
+    frame["events"].append(event)
+    return event
 
 
 @pytest.mark.replay
-def test_public_trace_is_event_synchronized_and_excludes_policy_audit(tmp_path: Path) -> None:
+def test_public_trace_is_tick_synchronized_and_excludes_policy_audit(tmp_path: Path) -> None:
     trace, _ = _run(tmp_path)
 
     assert trace["frames"][0]["tick"] == 0
     assert all(frame["sequence"] == index for index, frame in enumerate(trace["frames"]))
     assert all(len(frame["events"]) <= 1 for frame in trace["frames"])
+    assert all(frame["events"] == [] for frame in trace["frames"])
 
     decisions = [decision for frame in trace["frames"] for decision in frame["decisions"]]
-    assert decisions
-    assert all(
-        set(decision) <= {"decision_id", "tick", "agent_id", "chosen_action_id", "chosen_object_id"}
-        for decision in decisions
-    )
+    assert decisions == []
     serialized = json.dumps(trace, sort_keys=True)
     for evaluator_only_field in ('"candidates"', '"features"', '"utility"', '"policy"'):
         assert evaluator_only_field not in serialized
 
-    event_frames = {
-        frame["events"][0]["event_type"]: frame for frame in trace["frames"] if frame["events"]
-    }
-    blocked_task = event_frames["task_blocked"]["organization"]["tasks"][0]
-    assert blocked_task["status"] == "blocked"
-    assert "task_completed" not in event_frames
+    task = trace["frames"][-1]["organization"]["tasks"][0]
+    assert task["status"] == "open"
+    assert task["history"] == []
 
 
 @pytest.mark.replay
@@ -173,15 +181,13 @@ def test_digest_valid_private_or_sensitive_trace_is_rejected(
 @pytest.mark.replay
 def test_private_event_and_non_finite_number_are_rejected(tmp_path: Path) -> None:
     trace, path = _run(tmp_path)
-    event_frame = next(frame for frame in trace["frames"] if frame["events"])
-    event_frame["events"][0]["visibility"] = "private"
+    _last_public_event(trace)["visibility"] = "private"
     _write(path, _resign(trace))
     with pytest.raises(TraceError, match="not a public event"):
         load_trace(path)
 
     trace, path = _run(tmp_path, run_id="private-event-type")
-    event_frame = next(frame for frame in trace["frames"] if frame["events"])
-    event_frame["events"][0]["event_type"] = "reflection_completed"
+    _last_public_event(trace)["event_type"] = "reflection_completed"
     _write(path, _resign(trace))
     with pytest.raises(TraceError, match="private event type"):
         load_trace(path)
@@ -196,8 +202,9 @@ def test_private_event_and_non_finite_number_are_rejected(tmp_path: Path) -> Non
 @pytest.mark.replay
 def test_public_frames_are_single_event_post_event_snapshots(tmp_path: Path) -> None:
     trace, _ = _run(tmp_path)
-    frame = next(frame for frame in trace["frames"] if frame["events"])
-    second = copy.deepcopy(frame["events"][0])
+    event = _last_public_event(trace)
+    frame = trace["frames"][-1]
+    second = copy.deepcopy(event)
     second["event_id"] = "event_duplicate_snapshot"
     frame["events"].append(second)
 
@@ -245,10 +252,10 @@ def test_runtime_atomically_publishes_running_trace_and_failure_marker(
 
     failing = OrganizationRuntime(config)
 
-    def fail_step(_agent) -> None:
+    def fail_tick() -> None:
         raise RuntimeError("sentinel failure")
 
-    monkeypatch.setattr(failing, "_step_agent", fail_step)
+    monkeypatch.setattr(failing, "_advance_trace_tick", fail_tick)
     with pytest.raises(RuntimeError, match="sentinel failure"):
         failing.run(output_root=tmp_path, ticks=1, run_id="failed-live")
     status = json.loads((tmp_path / "failed-live" / "status.json").read_text(encoding="utf-8"))

@@ -24,12 +24,22 @@ def test_default_run_records_source_b3_protocol_lifecycle_status(tmp_path: Path)
     )
 
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
-    assert manifest["runtime"]["authority"] == "legacy_compatibility_runtime"
+    assert manifest["runtime"]["authority"] == "compatibility_trace_shell_unbound"
+    assert manifest["runtime"]["action_selection"] == "unbound_no_source_orgworld"
+    assert manifest["runtime"]["action_execution"] == "unavailable_fail_closed"
+    assert manifest["runtime"]["workflow_acceptance"] == "unavailable_fail_closed"
+    assert manifest["runtime"]["paper_result_evidence"] == (
+        "not_produced_by_compatibility_shell"
+    )
     source_core = manifest["source_core"]
     assert source_core["source_repository"] == "Hongyi-Du/SocioGenesis"
     assert source_core["source_commit"] == "041ddee1aa109a9b65dfdad7bdb8e258ad0a293e"
     assert source_core["mode"] == "source_b3_protocol_lifecycle_plus_shadow_observation"
-    assert source_core["execution_authority"] == "legacy_compatibility_runtime"
+    assert source_core["execution_authority"] == "compatibility_trace_shell_unbound"
+    assert source_core["workflow_acceptance"] == "unavailable_fail_closed"
+    assert source_core["workflow_acceptance_reason"] == (
+        "source_orgworld_action_host_not_mounted"
+    )
     assert source_core["state_materialization"] == "bootstrap_plus_source_b3_protocol_adoption"
     assert source_core["active_hci_host_adapter"] == "unavailable_fail_closed"
     source_b3 = source_core["source_b3_protocol_lifecycle"]

@@ -24,10 +24,16 @@ source B3 episode-to-reflection/wish lifecycle (explicit-input only)
      OpenAI-compatible provider; no template or native-Anthropic fallback
   -> private source cognition is never projected into relic-trace-v1
 
-legacy compatibility shell (non-authoritative)
-  -> deterministic mock lifecycle used by existing CLI/trace/Inspector smoke
-  -> task shell only; mock events never become source episodes, reflections,
-     wishes, or proposals
+source B3 growth + structural protocol-policy closures (explicit-input only)
+  -> source growth appraisal/reconciliation requires exact mounted OrgWorld and
+     ExecutionResult types; source policy masking requires exact ActionCandidate
+  -> no compatibility task/event/candidate translation, selector, or execution
+
+compatibility trace shell (non-authoritative)
+  -> emits static config snapshots and append-only clock/trace envelopes for
+     CLI/Inspector/Docker smoke only
+  -> no task is claimed, started, progressed, blocked, completed, selected, or
+     executed; no shell record becomes a source episode, reflection, wish, or proposal
   -> no claim of HCI/B3 execution parity
 ```
 
@@ -61,17 +67,22 @@ adjuncts (event appraisal, episode summarization, and wish interpretation) are
 recorded as unavailable because their prompt/assets and HCI host boundary are
 not closed here. They are not replaced with a local provider implementation.
 
-The compatibility shell is retained only to avoid breaking the release-facing
-CLI, `relic-trace-v1`, Inspector, Docker image, and wrappers while the real HCI
-host adapter is ported. It does not materialize source episode/reflection/LLM
-proposal generation/growth/policy/action execution behavior. Its run manifest
-makes that boundary explicit and a request for active HCI execution fails
-instead of silently using the mock implementation.
+The compatibility trace shell is retained only to keep the release-facing CLI,
+`relic-trace-v1`, Inspector, Docker image, and wrappers testable while the real
+HCI host adapter is ported. It emits static config snapshots plus clock/trace
+envelopes; it does not claim, start, progress, block, complete, select, or
+execute a configured task. It does not materialize source
+episode/reflection/LLM proposal generation/growth/policy/action-execution
+behavior. Its run manifest marks `workflow_acceptance` as
+`unavailable_fail_closed`; a `completed` shell run is not final workflow
+acceptance and a request for active HCI execution fails instead of silently
+using a local substitute.
 
-`relic-trace-v1` remains the only Inspector input. Each public event is paired
-with a post-event organization snapshot; private compatibility events are not
-exported. The runtime atomically replaces `trace.json` after every tick. Live
-Inspector refreshes are append-only: a digest failure, partial write, shortened
-history, or rewritten frame is ignored while the last verified trace remains
-visible with degraded health. The Inspector never reads private memories,
-provider messages, or source-core private envelopes.
+`relic-trace-v1` remains the only Inspector input. When an explicitly supplied
+public event exists, it is paired with a post-event organization snapshot; the
+unbound trace shell emits no invented public action event. The runtime
+atomically replaces `trace.json` after every tick. Live Inspector refreshes are
+append-only: a digest failure, partial write, shortened history, or rewritten
+frame is ignored while the last verified trace remains visible with degraded
+health. The Inspector never reads private memories, provider messages, or
+source-core private envelopes.

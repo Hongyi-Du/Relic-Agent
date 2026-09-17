@@ -155,15 +155,15 @@ def test_live_inspector_observes_an_active_runtime(tmp_path: Path) -> None:
     runtime = OrganizationRuntime(load_config(ROOT / "configs" / "minimal.yaml"))
     paused = threading.Event()
     resume = threading.Event()
-    original_step = runtime._step_agent
+    original_tick = runtime._advance_trace_tick
 
-    def gated_step(agent) -> None:
+    def gated_tick() -> None:
         if runtime.state.tick == 2 and not paused.is_set():
             paused.set()
             assert resume.wait(timeout=5)
-        original_step(agent)
+        original_tick()
 
-    runtime._step_agent = gated_step
+    runtime._advance_trace_tick = gated_tick
     run_thread = threading.Thread(
         target=lambda: runtime.run(output_root=tmp_path, ticks=3, run_id="active-live"),
         daemon=True,

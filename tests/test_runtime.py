@@ -18,6 +18,7 @@ def test_minimal_runtime_does_not_fabricate_a_source_proposal_lifecycle(tmp_path
 
     assert result.completed_task_count == 0
     assert result.adopted_protocol_count == 0
+    assert result.event_count == 0
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert manifest["runtime"]["provider_calls_made"] == 0
     assert (result.run_directory / "config.yaml").read_text(encoding="utf-8") == (
@@ -30,6 +31,11 @@ def test_minimal_runtime_does_not_fabricate_a_source_proposal_lifecycle(tmp_path
     assert manifest["summary"]["adopted_protocols"] == 0
     assert manifest["summary"]["completed_tasks"] == 0
     assert manifest["summary"]["proposals"] == 0
+    assert manifest["runtime"]["authority"] == "compatibility_trace_shell_unbound"
+    assert manifest["runtime"]["workflow_acceptance"] == "unavailable_fail_closed"
+    assert manifest["runtime"]["workflow_acceptance_reason"] == (
+        "source_orgworld_action_host_not_mounted"
+    )
     assert "source_llm_proposal_generation" in manifest["source_proposal_lifecycle"][
         "unavailable_fail_closed"
     ]
@@ -47,18 +53,26 @@ def test_minimal_runtime_does_not_fabricate_a_source_proposal_lifecycle(tmp_path
     assert manifest["summary"]["reflections"] == 0
     assert manifest["summary"]["wishes"] == 0
 
+    growth_status = manifest["source_growth_lifecycle"]
+    assert growth_status["source_host_binding"] == "unbound_no_source_orgworld"
+    assert growth_status["collected_signal_count"] == 0
+    assert growth_status["applied_growth_event_count"] == 0
+    assert "legacy_compatibility_task_to_growth_translation" in growth_status[
+        "unavailable_fail_closed"
+    ]
+    policy_status = manifest["source_policy_lifecycle"]
+    assert policy_status["source_host_binding"] == "unbound_no_source_orgworld"
+    assert policy_status["filter_calls"] == 0
+    assert policy_status["prevented_action_count"] == 0
+    assert "legacy_compatibility_candidate_to_source_action_translation" in policy_status[
+        "unavailable_fail_closed"
+    ]
+
     trace = load_trace(result.trace_path)
-    event_types = {event["event_type"] for frame in trace["frames"] for event in frame["events"]}
-    assert {"task_started", "task_blocked"} <= event_types
-    assert not {
-        "proposal_created",
-        "proposal_approved",
-        "protocol_adopted",
-        "protocol_used",
-        "task_completed",
-    }.intersection(event_types)
-    assert "reflection_completed" not in event_types
-    assert "wish_created" not in event_types
+    assert all(frame["events"] == [] for frame in trace["frames"])
+    assert all(frame["decisions"] == [] for frame in trace["frames"])
+    assert trace["frames"][-1]["organization"]["tasks"][0]["status"] == "open"
+    assert trace["frames"][-1]["organization"]["tasks"][0]["owner_id"] == "builder"
     serialized = json.dumps(trace, sort_keys=True)
     assert "raw_reflection_excerpt" not in serialized
     assert 'private_reflections_included": true' not in serialized.lower()

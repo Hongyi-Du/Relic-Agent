@@ -55,15 +55,23 @@ during config validation rather than silently altering lifecycle semantics.
 ## Deliberate remaining boundary
 
 This remains deliberately not a claim that Relic Agent is a complete B3 or HCI
-execution extraction. The deterministic compatibility runner still supplies
-the CLI, `relic-trace-v1`, Inspector, wrappers, Docker smoke path, and task
-shell. It does **not** turn a mock event, episode, reflection, or wish into a
-source cognitive record or a fixed proposal. A successful run is not paper
-evidence.
+execution extraction. The compatibility trace shell still supplies the CLI,
+`relic-trace-v1`, Inspector, wrappers, and Docker smoke path, but it only
+publishes static config snapshots and clock/trace envelopes. It does **not**
+claim, start, progress, block, complete, select, or execute a configured task;
+nor does it turn a mock event, episode, reflection, or wish into a source
+cognitive record or a fixed proposal. A successful shell run is not workflow
+acceptance or paper evidence.
 
 Each `run.json` states:
 
-- `execution_authority: legacy_compatibility_runtime`;
+- `runtime.authority: compatibility_trace_shell_unbound`;
+- `runtime.action_selection: unbound_no_source_orgworld`;
+- `runtime.action_execution: unavailable_fail_closed`;
+- `runtime.workflow_acceptance: unavailable_fail_closed`;
+- `runtime.paper_result_evidence: not_produced_by_compatibility_shell`;
+- `source_core.execution_authority: compatibility_trace_shell_unbound`;
+- `source_core.workflow_acceptance: unavailable_fail_closed`;
 - `mode: source_b3_protocol_lifecycle_plus_shadow_observation`;
 - `state_materialization: bootstrap_plus_source_b3_protocol_adoption`;
 - `active_hci_host_adapter: unavailable_fail_closed`.
@@ -78,6 +86,39 @@ source OrgWorld action execution, LLM reflection/source proposal generation,
 ProgramBench-only registry repair, growth/policy execution, and the HCI
 human-seat host adapter remain unavailable/fail-closed. No substitute
 implementation is provided for them.
+
+## Source growth and structural-policy closures
+
+The coding profile plus growth appraiser, authority helpers, objects, and
+reconciler are copied from HCI revision
+`dda36fb563375060ae8d8850300db01eb4695d29` into
+`relic_agent/source_b3/coding/` and `relic_agent/source_b3/growth/`. Their
+source and shipped-port blob IDs, plus the complete list of local import
+rewrites, are recorded in `relic_agent/source_b3/growth/provenance.py` and
+checked by `tests/test_source_b3_growth_policy_conformance.py`.
+
+The structural protocol-affordance module is byte-exact from that same HCI
+revision and its blob ID is checked separately in
+`relic_agent/source_b3/policy/provenance.py`. The HCI policy selector,
+attractor guard, candidate generator, and action executor are intentionally
+not ported as replacement behavior; their source blobs and host dependencies
+are recorded as unavailable components instead.
+
+Both lifecycle adapters are explicit-host-only. Growth requires the exact
+mounted source `OrgWorld` and `ExecutionResult` classes, matching world tick,
+and an owned source agent before it can collect or reconcile a growth signal.
+Structural policy requires the exact mounted source `OrgWorld` and
+`ActionCandidate` classes, matching tick, and an owned source agent before it
+can call the byte-exact mask. A release-shell task, event, candidate, profile,
+or `SimpleNamespace` is rejected rather than translated. Neither adapter builds
+an OrgWorld, manufactures an ExecutionResult/ActionCandidate, scores a
+candidate, or executes an action.
+
+The default compatibility trace shell instantiates these adapters only to
+publish their unbound status. It does not invoke either lifecycle, and its
+`run.json` therefore records zero collected/applied growth records and zero
+policy filter calls. This is a provenance boundary, not a final workflow
+acceptance path.
 
 ## Source event-to-episode closure
 

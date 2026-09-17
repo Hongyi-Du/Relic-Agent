@@ -1,9 +1,9 @@
 """Bridge source-compatible organization evidence to the vendored core.
 
-The historical compatibility runtime remains available only for the release
-shell.  A narrow HCI B3 protocol-lifecycle closure may additionally publish
-its real source events here, but this is still not an OrgWorld/HCI execution
-host adapter.
+The release trace shell can publish clock envelopes here, and a narrow HCI B3
+protocol-lifecycle closure may additionally publish real source events.  This
+is still not an OrgWorld/HCI execution host adapter and cannot accept a shell
+task as an action result.
 """
 
 from __future__ import annotations
@@ -59,7 +59,9 @@ class SourceCoreBridgeStatus:
             "schema_version": "relic-agent-source-core-status-v1",
             **source_core_provenance(),
             "mode": self._mode(),
-            "execution_authority": "legacy_compatibility_runtime",
+            "execution_authority": "compatibility_trace_shell_unbound",
+            "workflow_acceptance": "unavailable_fail_closed",
+            "workflow_acceptance_reason": "source_orgworld_action_host_not_mounted",
             "state_materialization": self._state_materialization(),
             "active_hci_host_adapter": "unavailable_fail_closed",
             "observed_event_count": self.observed_event_count,
@@ -101,7 +103,7 @@ class SourceCoreBridgeStatus:
 
 
 class SourceCoreObservationBridge:
-    """Validate compatibility events through source-core append-only contracts.
+    """Validate trace-shell and source events through source-core contracts.
 
     This class intentionally does not translate task execution, reflection, or
     full OrgWorld semantics into a substitute HCI world.  It can observe legacy
@@ -110,7 +112,7 @@ class SourceCoreObservationBridge:
     """
 
     _SOURCE = "relic-agent.compatibility"
-    _HOST = "relic-agent.mock"
+    _HOST = "relic-agent.compatibility_trace_shell"
     _SOURCE_B3_PROTOCOL = "source_b3_protocol_lifecycle"
     _SOURCE_B3_PROTOCOL_HOST = "relic-agent.source_b3_protocol_adapter"
     _SOURCE_B3_EPISODE = "source_b3_episode_lifecycle"
@@ -203,7 +205,7 @@ class SourceCoreObservationBridge:
         return accepted
 
     def complete_tick(self, tick: int) -> bool:
-        """Publish a source-core tick envelope once after compatibility work."""
+        """Publish one source-core clock envelope without implying action work."""
 
         normalized_tick = int(tick)
         if normalized_tick in self._completed_ticks:
@@ -214,7 +216,10 @@ class SourceCoreObservationBridge:
                 event_type=OrganizationEventType.TICK_COMPLETED,
                 step=normalized_tick,
                 provenance=self._provenance,
-                payload={"compatibility_tick": normalized_tick},
+                payload={
+                    "compatibility_tick": normalized_tick,
+                    "action_execution": "unavailable_fail_closed",
+                },
                 visibility=OrganizationVisibility.ORGANIZATION,
             )
         )

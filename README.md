@@ -7,7 +7,8 @@ extraction. It is not the paper benchmark or a claim of complete B3/HCI
 reproduction. Source-shaped proposals, protocol lifecycle, explicit-input
 event-to-episode lifecycle, and reflection contracts are routed through pinned
 HCI closures; the deterministic shell remains for the CLI, public trace,
-Inspector, Docker path, and task flow.
+Inspector, Docker path, and clock/trace publication only. It does not claim,
+start, progress, block, complete, select, or execute a configured task.
 
 The source proposal-manager slice accepts externally supplied source-shaped
 drafts; the episode slice likewise requires an explicit source event/result
@@ -17,7 +18,9 @@ OrgWorld, and an OpenAI-compatible source provider; the mock shell generates
 neither a hidden reflection nor a wish. Full OrgWorld execution, live LLM
 reflection/proposal generation, growth/policy execution, and the HCI host
 adapter are explicitly unavailable/fail-closed. Do not treat a successful run
-as a paper result. See [source provenance and boundary](docs/SOURCE_PROVENANCE.md).
+as a workflow acceptance, HCI execution, or paper result: `completed` means
+only that the compatibility trace shell emitted and validated its public
+artifacts. See [source provenance and boundary](docs/SOURCE_PROVENANCE.md).
 
 ## Quickstart
 
@@ -150,7 +153,8 @@ development-machine paths.
 抽取构建；它不是论文 benchmark，也不宣称已完整复现 B3/HCI。默认 protocol
 lifecycle、source-shaped proposal，以及需要显式 source event/result 和 OrgWorld
 输入的 event-to-episode lifecycle 和 reflection contracts 都接到固定版本的 HCI
-closure；deterministic shell 仍负责 CLI、公开 trace、Inspector、Docker 和 task flow。
+closure；deterministic shell 仍负责 CLI、公开 trace、Inspector、Docker，以及时钟/trace
+发布。它不会声称、开始、推进、阻塞、完成、选择或执行配置里的 task。
 
 source proposal-manager slice 只接受外部提供的 source-shaped draft；episode slice
 也只接受显式的 source event/result 和 OrgWorld，绝不会把 mock task event 编成
@@ -158,7 +162,8 @@ episode；reflection slice 则要求 closed source episode、显式挂载的 HCI
 以及 OpenAI-compatible source provider，mock shell 不会偷偷生成 reflection/wish。
 完整 OrgWorld execution、live LLM reflection/proposal generation、growth/policy
 execution 和 HCI host adapter 都是 explicitly unavailable/fail-closed。成功的 run
-不能当作论文结果。详见
+不能当作 workflow acceptance、HCI execution 或论文结果；`completed` 只表示
+compatibility trace shell 已写出并校验公开产物。详见
 [source provenance and boundary](docs/SOURCE_PROVENANCE.md)。
 
 当前可直接复制运行：
