@@ -435,6 +435,10 @@ _CONFIG_SUMMARY_FIELD_KINDS = {
     "protocol_adoption_threshold": "number", "amendment_threshold": "number",
     "approver_roles": "strings", "approver_members": "strings",
     "reflection_enabled": "boolean", "reflection_cadence_ticks": "integer",
+    "retirement_behavior": "string",
+    "retirement_enabled": "boolean", "public_trace": "boolean",
+    "local_debug": "boolean", "token_logging": "boolean",
+    "cost_logging": "boolean", "redact_secrets": "boolean",
 }
 _TOOL_EVENT_FIELD_KINDS = {
     "event_id": "string", "event_type": "string", "actor_id": "string",

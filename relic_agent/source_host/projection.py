@@ -447,14 +447,57 @@ def _public_config(world: Any) -> dict[str, Any] | None:
     org = config.get("organization", {})
     governance = config.get("governance", {})
     learning = config.get("learning", {})
+    lifecycle = getattr(world, "generic_lifecycle", None)
     # Deliberate allowlists: provider endpoints, prompt text, plugin arguments,
     # memory, workspace paths, and secret environment values stay local.
-    summary = {"inspector_enabled": config.get("observability", {}).get("inspector", True),
+    observability = config.get("observability", {})
+    if not isinstance(observability, Mapping):
+        observability = {}
+    runtime_learning = getattr(lifecycle, "learning", None)
+    if isinstance(runtime_learning, Mapping):
+        reflection = getattr(lifecycle, "reflection", {})
+        wish = getattr(lifecycle, "wish", {})
+        proposal = getattr(lifecycle, "proposal", {})
+        protocol_learning = getattr(lifecycle, "protocol_learning", {})
+        # These are the same names exposed by the generic configuration, but
+        # their values come from GenericLifecycle after its switch merge.
+        feature_flags = {
+            key: runtime_learning.get(key, True)
+            for key in (
+                "profile_conditioning",
+                "capability_learning",
+                "institutionalization",
+                "company_skill_memory",
+                "governance_approval",
+                "executable_workflow",
+                "external_signal_loop",
+            )
+        }
+        feature_flags.update(
+            reflection=reflection.get("enabled", True),
+            wish_extraction=wish.get("enabled", True),
+            proposal_generation=proposal.get("enabled", True),
+            protocol_formation=protocol_learning.get("enabled", True),
+            retirement=protocol_learning.get("retirement_enabled", True),
+        )
+        manager = getattr(world, "proposal_manager", None)
+        allow_retirement = getattr(manager, "protocol_allow_retirement", True)
+        feature_flags["retirement"] = (
+            feature_flags["retirement"] is True and allow_retirement is True
+        )
+    else:
+        # Keep compatibility with older lightweight projection fixtures that
+        # have no mounted generic lifecycle.
+        feature_flags = {
+            key: value for key, value in learning.items() if isinstance(value, bool)
+        }
+        reflection = learning.get("reflection", {})
+    summary = {"inspector_enabled": observability.get("inspector", True),
                "description": org.get("description", ""),
                "channels": list(org.get("channels", [])),
                "decision_mode": config.get("runtime", {}).get("decision_mode", "profile_policy"),
-               "features_enabled": sorted(k for k, v in learning.items() if v is True),
-               "features_disabled": sorted(k for k, v in learning.items() if v is False)}
+               "features_enabled": sorted(k for k, v in feature_flags.items() if v is True),
+               "features_disabled": sorted(k for k, v in feature_flags.items() if v is False)}
     for key in ("approval_mode", "deadlock_behavior", "decision_visibility"):
         if isinstance(governance.get(key), str):
             summary[key] = governance[key]
@@ -466,10 +509,23 @@ def _public_config(world: Any) -> dict[str, Any] | None:
         if key in governance:
             summary[key] = list(governance[key])
     summary["role_permissions"] = {role: list(values) for role, values in governance.get("role_permissions", {}).items()}
-    reflection = learning.get("reflection", {})
-    if isinstance(reflection, dict):
+    if isinstance(reflection, Mapping):
         summary["reflection_enabled"] = reflection.get("enabled", True)
         summary["reflection_cadence_ticks"] = reflection.get("cadence_ticks", 6)
+    if isinstance(runtime_learning, Mapping):
+        summary["retirement_behavior"] = getattr(
+            lifecycle, "retirement_behavior", "review"
+        )
+        summary["retirement_enabled"] = feature_flags["retirement"]
+        for key, default in (
+            ("public_trace", True),
+            ("local_debug", False),
+            ("token_logging", True),
+            ("cost_logging", True),
+            ("redact_secrets", True),
+        ):
+            value = observability.get(key, default)
+            summary[key] = value if isinstance(value, bool) else default
     return summary
 
 

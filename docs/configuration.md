@@ -27,6 +27,24 @@ configuration before execution.
 `RELIC_AGENT_OUTPUT_ROOT`, whose default is `outputs`. `--run-id` sets a stable
 output directory name; an existing run directory is never overwritten.
 
+## Learning switches
+
+`learning.external_signal_loop: false` disables community ticks, scheduled
+external events, and the optional external-society bridge through the shared
+engine's existing gate. The generic setting takes precedence over the legacy
+`ORG_MECHANISM_ABLATIONS` external-bridge toggle; other ablations are preserved.
+
+`learning.capability_learning: false` keeps each agent's configured skills and
+base reputation/authority without applying growth at initialization or on later
+ticks. Tasks and other independently enabled organization mechanisms still run.
+With learning enabled, initial authority derivation and daily growth retain
+their existing behavior. These settings do not change the source B3 preset.
+
+Inspector shows the effective lifecycle switches after combining top-level and
+nested settings, including protocol retirement, alongside public trace, local
+debug, and token/cost logging settings. Private configuration values stay out of
+this summary.
+
 ## Compatibility preset
 
 ```bash

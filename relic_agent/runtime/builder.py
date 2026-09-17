@@ -18,6 +18,7 @@ from environments.org_env.backend.simulation import OrgWorld
 from environments.org_env.backend.workspace.personal import PersonalWorkspace
 from environments.org_env.backend.workspace.objects import FileObject, Visibility
 from environments.org_env.config.scenarios import default_scenario
+from environments.org_env.experiments.ablations import EXTERNAL_BRIDGE, resolve_mechanism_ablations
 from environments.org_env.runtime_adapter.execution import ExecutionResult
 from environments.org_env.runtime_adapter.feature_extractor import OrgFeatureExtractor
 from relic_agent.config_schema import TaskSpec
@@ -625,7 +626,16 @@ def build_source_b3_world(config):
 
 def build_generic_world(config):
     data = deepcopy(config.data)
-    world = GenericOrgWorld(default_scenario(seed=config.runtime.seed))
+    scenario = default_scenario(seed=config.runtime.seed)
+    disabled = set(resolve_mechanism_ablations(scenario.params.get("mechanism_ablations")).disabled)
+    # The public configuration controls the existing shared external-signal
+    # gate, including when the source compatibility environment says otherwise.
+    if data["learning"]["external_signal_loop"]:
+        disabled.discard(EXTERNAL_BRIDGE)
+    else:
+        disabled.add(EXTERNAL_BRIDGE)
+    scenario.params["mechanism_ablations"] = sorted(disabled)
+    world = GenericOrgWorld(scenario)
     world.generic_config = data
     world.agent_config = {agent["id"]: agent for agent in data["agents"]}
     world.task_specs = {task["id"]: task for task in data["tasks"]}
@@ -739,7 +749,10 @@ def build_generic_world(config):
     if data["runtime"]["decision_mode"] == "flat_deterministic":
         world._loop["policy"].use_profile_conditioning = False
         world._loop["policy"].mode = "argmax"
-    world._growth_reconciler.run(world, 0)
+    # OrgAgent already initializes skills, reputation and authority. Do not
+    # derive learned authority or emit growth events when learning is disabled.
+    if world.capability_learning_enabled:
+        world._growth_reconciler.run(world, 0)
     world._authority_t0 = {aid: dict(agent.authority) for aid, agent in world.agents.items()}
 
     # Keep the shared class-level step intact (generic mode uses the same
