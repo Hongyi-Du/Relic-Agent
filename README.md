@@ -6,9 +6,12 @@ separate clock/trace compatibility runtime.  Public output is a deliberately
 filtered `relic-trace-v1` projection of that world for replay and Inspector.
 
 The release host is not a claim that this standalone package reproduces every
-paper result.  It ships the deterministic B3 organization lifecycle and makes
-no external evaluator, ProgramBench, CooperBench, HCI human-seat, or model
-provider claim.  See [source provenance and boundaries](docs/SOURCE_PROVENANCE.md).
+paper result.  Its normal source-native path does not load or execute an
+external evaluator, ProgramBench, CooperBench, HCI human-seat, or live model
+provider workflow.  That path-level statement is not proof that the vendored
+source contains no lazy references to upstream-only systems.  See [source
+provenance and boundaries](docs/SOURCE_PROVENANCE.md) and [known release
+gaps](docs/KNOWN_RELEASE_GAPS.md).
 
 ## Quickstart
 
@@ -21,10 +24,13 @@ uv run relic-agent smoke
 uv run relic-agent run-default
 ```
 
-`smoke` runs the real host for 12 ticks; `run-default` runs seed 42 for 72
-ticks.  Neither path contacts a model provider.  The default run produces
-source actions, episodes, reflections, proposals, and protocol specifications
-when the source lifecycle reaches them.
+`smoke` runs the real host for 12 ticks; `run-default` runs the bundled seed 42
+configuration for 72 ticks.  These deterministic paths record their actual
+provider-call count in `run.json`; they do not configure or validate a live
+provider workflow.  A default run is a local source-lifecycle observation: it
+may contain source actions, episodes, reflections, proposals, and protocol
+specifications when that fixed lifecycle reaches them.  It is not a claim
+about altered seeds/tick counts, an external evaluator, or paper results.
 
 Runs are written below `outputs/<run-id>/` unless `--output-root` or
 `RELIC_AGENT_OUTPUT_ROOT` is supplied.  Each run includes:
@@ -56,7 +62,9 @@ agent IDs remain intact; the public projection displays `scarlett` as `Los Xi`.
 `run-minimal` is a short source-native run (seed 7, 12 ticks).  It is useful
 for an installation check but may not yet have enough lifecycle evidence for
 `workflow_acceptance: passed`; `run-default` is the canonical 72-tick local
-workflow acceptance path.
+workflow-evidence path.  A `passed` value means that one run recorded source
+action, episode, reflection, proposal, and protocol-spec evidence; it is not
+an evaluator, benchmark, or publication acceptance result.
 
 ## Docker
 
@@ -79,16 +87,20 @@ uv run pytest
 uv run ruff check .
 ```
 
-The source-host conformance checks verify critical source blobs and the seven
-source-owned structures (action log, policy trace, episodes, reflections,
-wishes, proposals, and protocol specifications) for the pinned 336-tick smoke
-seeds.  The trace and Inspector tests validate the public privacy boundary.
+The repository includes source-host conformance checks for critical source
+blobs and the seven source-owned structures (action log, policy trace,
+episodes, reflections, wishes, proposals, and protocol specifications) at the
+pinned 336-tick smoke seeds.  The trace and Inspector tests are code-level
+public-boundary checks; they are not an external evaluator or paper-study
+result.
 
 ## 中文说明
 
 `relic-agent` 默认直接构建并推进 vendored 的 B3 `OrgWorld`，不是旧的独立时钟/
 trace 机制。`run-default` 使用 seed 42 运行 72 ticks，并导出
 经过隐私过滤的 `relic-trace-v1`，可用 Inspector 查看。该独立发布包不声称复现
-论文全部结果，也不包含外部 evaluator、ProgramBench、CooperBench、HCI 人类座位
-或在线模型调用。配置只允许选择已封装的 source-native B3 情景，不能把任意
-两三人 YAML 静默翻译成另一套组织运行时。
+论文全部结果。正常 source-native 路径不会加载或执行外部 evaluator、ProgramBench、
+CooperBench、HCI 人类座位或在线模型工作流；这不等于 vendored 源码中完全没有
+指向上游系统的 lazy 引用。配置只允许选择已封装的 source-native B3 情景，不能把任意
+两三人 YAML 静默翻译成另一套组织运行时。`workflow_acceptance: passed` 只表示一次
+本地运行收集到规定的 source lifecycle 证据，不是 benchmark、evaluator 或论文验收。
