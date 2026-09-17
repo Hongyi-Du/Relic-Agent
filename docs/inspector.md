@@ -118,9 +118,17 @@ The server exposes only `/`, `/index.html`, `/app.css`, `/app.js`,
 Policy, loopback Host-header validation, and no-store headers.
 
 The Inspector has no authentication. A non-loopback bind is therefore rejected
-unless `--allow-remote` is supplied explicitly; that opt-in also permits remote
-Host headers. Docker uses this opt-in only inside the container while Compose
-maps the host port to `127.0.0.1`.
+unless `--allow-remote` is supplied explicitly. That acknowledgement changes
+the bind address only: remote mode accepts literal IP Host headers while
+continuing to reject arbitrary DNS names, including a rebinding domain. Docker
+uses this opt-in only inside the container while Compose maps the host port to
+`127.0.0.1`.
+
+The canonical release Inspector assets live in the sibling `Relic` checkout.
+`tests/test_inspector_frontend.py` compares SHA-256 digests when that checkout
+is present; a standalone checkout can set
+`RELIC_CANONICAL_INSPECTOR_STATIC_ROOT` to that `relic/inspector/static`
+directory to run the same parity guard.
 
 ## 当前边界
 
