@@ -40,7 +40,7 @@ Final review also verified owner assessment for live tasks without collaborators
 protocol gates within learned tools, successful read/message use, and accurate
 pending status for partially completed composed tools.
 
-A clean local clone of implementation commit `eccde06` built a wheel, which was
+A clean local clone of implementation commit `6927de7` built a wheel, which was
 installed with its declared dependencies in a new Python 3.12 virtualenv.
 All commands below ran outside the repository, importing the installed package:
 
