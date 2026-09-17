@@ -36,8 +36,9 @@ ID, current tick, organization ID, visible files, public tasks, and plugin
 configuration. It is a snapshot, not the mutable world.
 
 The supported argument schema subset is `type`, `properties`, `required`,
-`additionalProperties`, `items`, `enum`, `minimum`, and `maximum`. Tool validation
-runs before execution. Plugin failures publish an exception type, not raw
+`additionalProperties`, `items`, `enum`, `minimum`, and `maximum`. The root describes
+an arguments object; arrays may appear in its properties. Tool validation runs
+before execution. Plugin failures publish an exception type, not raw
 exception messages or arguments.
 
 To return workspace artifacts, use `side_effect_policy: workspace` and return
@@ -55,3 +56,29 @@ operations short and use network timeouts inside plugins that contact services.
 See `examples/generic/custom-tool.yaml` and its `word_count.py` for a runnable
 example. Inspector shows tool execution status without exposing plugin arguments,
 private contents, or provider traffic.
+
+A plugin can return `status: pending` or `status: failed` when it did not finish
+its work. Such calls do not satisfy task completion or apply returned artifacts.
+Omitting `status` means successful completion. Read and review operations only
+receive files visible to the acting agent, including when files are linked to a
+shared task.
+
+Deterministic tasks can request a plugin through
+`tasks[].metadata.tool_calls: [{tool: word_count, arguments: {text: example}}]`.
+The configured owner must have the tool grant; successful calls are required
+before task completion. In `runtime.decision_mode: llm_direct`, the selected
+agent sees its granted tool schemas and can choose its own plugin arguments.
+
+Learned tools use the same `ToolSpec` objects produced by proposal adoption.
+Generic mode exposes an active spec only when its `callable_by_agents` and
+`callable_by_roles` grants match the caller and every `required_permissions`
+entry is present in the caller's effective permissions. For example, a tool can
+declare `required_permissions: [use_learned_tools]` and the intended agents can
+receive `use_learned_tools` in their config `permissions`.
+
+The generic executor composes only existing generic operations named in
+`required_actions` (`claim_task`, `work_on_task`, `review_doc`,
+`complete_task`, `send_message`, the built-in `files`/`task_board`/
+`messaging`/`search` operations, or a configured plugin). Unknown action names,
+missing grants, and nested learned-tool calls fail closed. A `tool_use_event` is
+published only when the composition changes a task or workspace file.

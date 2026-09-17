@@ -14,10 +14,11 @@ represented by environment variable *names* and are never looked up here.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, fields, is_dataclass
+from dataclasses import dataclass, field, fields, is_dataclass, replace
 from importlib import import_module
 from importlib.util import module_from_spec, spec_from_file_location
 import hashlib
+import inspect
 import math
 from pathlib import Path
 import re
@@ -318,7 +319,7 @@ class TaskSpec:
     input_artifacts: tuple[Any, ...] = ()
     expected_deliverables: tuple[Any, ...] = ()
     acceptance_criteria: tuple[Any, ...] = ()
-    deadline: str | None = None
+    deadline: int | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
 
@@ -442,9 +443,6 @@ class RuntimeSpec:
     ticks: int = 72
     decision_mode: str = "profile_policy"
     provider: str = "generic"
-    timeout_seconds: float = 60.0
-    retry_count: int = 0
-    max_concurrent_agents: int | None = None
 
 
 @dataclass(frozen=True)
@@ -528,7 +526,7 @@ def _parse_organization(value: Any) -> OrganizationSpec:
         shared_goals=_string_list(goals, "organization.shared_goals"),
         topology=_json_mapping(topology, "organization.topology"),
         channels=_string_list(organization.get("channels", _MISSING), "organization.channels"),
-        shared_workspace=_json_value(workspace, "organization.shared_workspace"),
+        shared_workspace=_workspace(workspace, "organization.shared_workspace"),
         initial_documents=_json_list(documents, "organization.initial_documents"),
         initial_artifacts=_json_list(artifacts, "organization.initial_artifacts"),
         metadata=_json_mapping(organization.get("metadata", _MISSING), "organization.metadata"),
@@ -540,6 +538,48 @@ def _environment_name(value: Any, label: str) -> str:
     if not _ENV_NAME_RE.fullmatch(name):
         raise ConfigError(f"{label} must be a valid environment variable name")
     return name
+
+
+def _reject_inline_credentials(value: Any, label: str) -> None:
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            normalized = str(key).lower().replace("-", "_")
+            if normalized in {"api_key", "apikey", "x_api_key", "authorization", "proxy_authorization",
+                              "token", "access_token", "password", "secret", "client_secret"}:
+                raise ConfigError(f"{label}: credentials must use a provider api_key_env reference")
+            _reject_inline_credentials(item, label)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _reject_inline_credentials(item, label)
+
+
+def _validate_model_options(generation: Mapping, reasoning: Mapping, provider_type: str, label: str) -> None:
+    generation_keys = {"temperature", "max_tokens", "max_output_tokens"}
+    if provider_type in {"anthropic", "anthropic_compatible", "generic", "http", "generic_http", "mock", "deterministic"}:
+        generation_keys |= {"top_p", "top_k", "stop_sequences"}
+    if provider_type in {"generic", "http", "generic_http", "mock", "deterministic"}:
+        generation_keys |= {"min_p", "presence_penalty", "frequency_penalty", "stop"}
+    _only_keys(generation, generation_keys, f"{label}.generation")
+    for key in ("temperature", "top_p", "min_p", "presence_penalty", "frequency_penalty"):
+        if key in generation:
+            _number(generation[key], f"{label}.generation.{key}")
+    for key in ("max_tokens", "max_output_tokens", "top_k"):
+        if key in generation:
+            _integer(generation[key], f"{label}.generation.{key}", minimum=0)
+    for key in ("stop", "stop_sequences"):
+        if key in generation:
+            _string_list(generation[key], f"{label}.generation.{key}")
+    if provider_type in {"openai", "openai_compatible"}:
+        _only_keys(reasoning, {"effort", "reasoning_effort"}, f"{label}.reasoning")
+        for key, value in reasoning.items():
+            _text(value, f"{label}.reasoning.{key}")
+    elif provider_type in {"anthropic", "anthropic_compatible"}:
+        _only_keys(reasoning, {"enabled", "budget_tokens", "thinking_budget"}, f"{label}.reasoning")
+        if "enabled" in reasoning:
+            _bool(reasoning["enabled"], f"{label}.reasoning.enabled")
+        for key in ("budget_tokens", "thinking_budget"):
+            if key in reasoning:
+                _integer(reasoning[key], f"{label}.reasoning.{key}", minimum=1)
 
 
 def _parse_provider(value: Any, label: str) -> ProviderSpec:
@@ -563,6 +603,10 @@ def _parse_provider(value: Any, label: str) -> ProviderSpec:
         },
         label,
     )
+    provider_type = _text(provider.get("type"), f"{label}.type")
+    if provider_type not in {"mock", "deterministic", "openai", "openai_compatible", "anthropic",
+                             "anthropic_compatible", "generic", "http", "generic_http"}:
+        raise ConfigError(f"{label}.type is unsupported")
     timeout = _pick(provider, ("timeout_seconds", "timeout"), f"{label}.timeout_seconds", default=60.0)
     retries = _pick(provider, ("retry_count", "retries"), f"{label}.retry_count", default=0)
     fallback = _pick(
@@ -574,9 +618,49 @@ def _parse_provider(value: Any, label: str) -> ProviderSpec:
     params: dict[str, Any] = _json_mapping(provider.get("parameters", _MISSING), f"{label}.parameters")
     for key in ("generation", "reasoning"):
         if key in provider:
-            params[key] = _json_value(provider[key], f"{label}.{key}")
+            params[key] = _json_mapping(provider[key], f"{label}.{key}")
+    _reject_inline_credentials(params, label)
+    price_keys = {"input_cost_per_1k", "prompt_cost_per_1k", "input_price_per_1k", "prompt_price_per_1k",
+                  "input_per_1k", "output_cost_per_1k", "completion_cost_per_1k", "output_price_per_1k",
+                  "completion_price_per_1k", "output_per_1k", "cost_per_1k_tokens"}
+    parameter_keys = {"generation", "reasoning", "pricing", "cost"} | price_keys
+    if provider_type in {"mock", "deterministic"}:
+        parameter_keys |= {"fail", "script"}
+    else:
+        parameter_keys |= {"base_url", "endpoint", "headers", "default_headers"}
+    if provider_type in {"openai", "openai_compatible"}:
+        parameter_keys |= {"wire_api", "json_transport", "store_responses"}
+    elif provider_type not in {"mock", "deterministic"}:
+        parameter_keys |= {"api_key_header", "api_key_prefix"}
+        if provider_type in {"anthropic", "anthropic_compatible"}:
+            parameter_keys.add("anthropic_version")
+    _only_keys(params, parameter_keys, f"{label}.parameters")
+    for key in price_keys & params.keys():
+        _number(params[key], f"{label}.parameters.{key}", minimum=0)
+    for key in ("pricing", "cost"):
+        if key in params:
+            prices = _mapping(params[key], f"{label}.parameters.{key}")
+            _only_keys(prices, price_keys, f"{label}.parameters.{key}")
+            for name, price in prices.items():
+                _number(price, f"{label}.parameters.{key}.{name}", minimum=0)
+    for key in ("headers", "default_headers"):
+        if key in params:
+            for name, value in _mapping(params[key], f"{label}.parameters.{key}").items():
+                _text(value, f"{label}.parameters.{key}.{name}")
+    for key in ("fail", "store_responses"):
+        if key in params:
+            _bool(params[key], f"{label}.parameters.{key}")
+    if "script" in params and (not isinstance(params["script"], list) or
+                              any(not isinstance(item, Mapping) for item in params["script"])):
+        raise ConfigError(f"{label}.parameters.script must be a list of response objects")
+    for key, choices in {"wire_api": {"chat_completions", "responses"},
+                         "json_transport": {"native", "prompt_only"}}.items():
+        if key in params and params[key] not in choices:
+            raise ConfigError(f"{label}.parameters.{key} must be one of {sorted(choices)}")
+    _validate_model_options(_mapping(params.get("generation", {}), f"{label}.generation"),
+                            _mapping(params.get("reasoning", {}), f"{label}.reasoning"), provider_type, label)
     return ProviderSpec(
-        type=_text(provider.get("type"), f"{label}.type"),
+        type=provider_type,
         base_url_env=(
             _environment_name(provider["base_url_env"], f"{label}.base_url_env")
             if "base_url_env" in provider and provider["base_url_env"] is not None
@@ -587,7 +671,7 @@ def _parse_provider(value: Any, label: str) -> ProviderSpec:
             if "api_key_env" in provider and provider["api_key_env"] is not None
             else None
         ),
-        default_model=_optional_text(provider.get("default_model", _MISSING), f"{label}.default_model"),
+        default_model=_optional_text(provider.get("default_model", "deterministic" if provider_type in {"mock", "deterministic"} else _MISSING), f"{label}.default_model"),
         timeout_seconds=_number(timeout, f"{label}.timeout_seconds", minimum=0.001),
         retry_count=_integer(retries, f"{label}.retry_count", minimum=0),
         fallback_provider=(
@@ -673,24 +757,34 @@ def _plugin_module_from_path(path: Path, label: str) -> ModuleType:
         return module
     except Exception as exc:  # noqa: BLE001 - turn arbitrary plugin errors into ConfigError
         sys.modules.pop(module_name, None)
-        raise ConfigError(f"{label} plugin import failed: {exc}") from exc
+        raise ConfigError(f"{label} plugin import failed ({type(exc).__name__})") from exc
 
 
-def _import_plugin(module_name: str | None, path: str | None, label: str, base_dir: Path | None) -> None:
+def _import_plugin(module_name: str | None, path: str | None, label: str, base_dir: Path | None) -> ModuleType:
     if module_name is None and path is None:
         raise ConfigError(f"{label} must define module or path")
     if module_name is not None and path is not None:
         raise ConfigError(f"{label} must define only one of module or path")
     if module_name is not None:
         try:
-            import_module(module_name)
+            return import_module(module_name)
         except Exception as exc:  # noqa: BLE001 - plugin boundary
-            raise ConfigError(f"{label} plugin import failed: {exc}") from exc
+            raise ConfigError(f"{label} plugin import failed ({type(exc).__name__})") from exc
     else:
         plugin_path = Path(path or "")
         if not plugin_path.is_absolute() and base_dir is not None:
             plugin_path = base_dir / plugin_path
-        _plugin_module_from_path(plugin_path.expanduser().resolve(), label)
+        return _plugin_module_from_path(plugin_path.expanduser().resolve(), label)
+
+
+def _validate_tool_entrypoint(module: ModuleType, entrypoint: str | None, label: str) -> None:
+    function = getattr(module, entrypoint or "execute", None)
+    if not callable(function):
+        raise ConfigError(f"{label} must export execute(arguments, context) or its configured entrypoint")
+    try:
+        inspect.signature(function).bind({}, {})
+    except (TypeError, ValueError) as exc:
+        raise ConfigError(f"{label} entrypoint must accept arguments and context") from exc
 
 
 def _parse_plugin_item(
@@ -713,7 +807,8 @@ def _parse_plugin_item(
             path = None
             inferred = raw_ref.rsplit(".", 1)[-1]
         plugin_id = forced_id or inferred
-        _import_plugin(module, path, label, base_dir)
+        imported = _import_plugin(module, path, label, base_dir)
+        _validate_tool_entrypoint(imported, None, label)
         return ToolPluginSpec(id=_identifier(plugin_id, f"{label}.id"), module=module, path=path)
     item = _mapping(value, label)
     _only_keys(
@@ -743,7 +838,8 @@ def _parse_plugin_item(
     entrypoint = _optional_text(entrypoint_value, f"{label}.entrypoint")
     raw_id = forced_id or _pick(item, ("id", "name"), f"{label}.id", default=_MISSING)
     timeout = _pick(item, ("timeout_seconds", "timeout"), f"{label}.timeout_seconds", default=30.0)
-    _import_plugin(module, path, label, base_dir)
+    imported = _import_plugin(module, path, label, base_dir)
+    _validate_tool_entrypoint(imported, entrypoint, label)
     return ToolPluginSpec(
         id=_identifier(raw_id, f"{label}.id"),
         module=module,
@@ -824,6 +920,8 @@ def _parse_tools(value: Any, *, base_dir: Path | None) -> ToolsSpec:
             raise ConfigError(f"unknown built-in tool {item.id!r}; register custom tools as plugins")
     for item in (*builtins, *plugins):
         _validate_tool_schema(item.schema, f"tools.{item.id}.schema")
+        if item.schema.get("type") not in {None, "object"}:
+            raise ConfigError(f"tools.{item.id}.schema must describe an arguments object")
         if item.side_effect_policy not in {"none", "read_only", "workspace", "external"}:
             raise ConfigError(f"tools.{item.id}.side_effect_policy is unsupported")
     ids = [item.id for item in (*builtins, *plugins)]
@@ -843,6 +941,44 @@ def _parse_skills(value: Any, label: str) -> dict[str, float]:
         name = _text(raw_name, f"{label} key")
         result[name] = _number(score, f"{label}.{name}", minimum=0.0, maximum=1.0)
     return result
+
+
+def _workspace(value: Any, label: str) -> Any:
+    if isinstance(value, str):
+        return _text(value, label)
+    value = _mapping(value, label)
+    _only_keys(value, {"root", "files"}, label)
+    if "root" in value:
+        _text(value["root"], f"{label}.root")
+    files = value.get("files", [])
+    if not isinstance(files, list):
+        raise ConfigError(f"{label}.files must be a list")
+    for index, item in enumerate(files):
+        if isinstance(item, str):
+            continue
+        item = _mapping(item, f"{label}.files[{index}]")
+        _only_keys(item, {"id", "title", "content", "summary", "owner"}, label)
+        _text(item.get("id"), f"{label}.files[{index}].id")
+    return _json_value(value, label)
+
+
+def _schedule(value: Any, label: str) -> dict[str, Any]:
+    value = _mapping(value, label)
+    _only_keys(value, {"active_ticks", "hours", "working_hours", "weekdays", "interval_ticks",
+                      "after_hours_responsiveness", "weekend_work_tendency", "deep_work_preference",
+                      "meeting_tolerance"}, label)
+    for key, maximum in (("active_ticks", None), ("hours", 23), ("working_hours", 23), ("weekdays", 6)):
+        if key in value:
+            if not isinstance(value[key], list):
+                raise ConfigError(f"{label}.{key} must be a list")
+            for item in value[key]:
+                _integer(item, f"{label}.{key}", minimum=0, maximum=maximum)
+    if "interval_ticks" in value:
+        _integer(value["interval_ticks"], f"{label}.interval_ticks", minimum=1)
+    for key in ("after_hours_responsiveness", "weekend_work_tendency", "deep_work_preference", "meeting_tolerance"):
+        if key in value:
+            _number(value[key], f"{label}.{key}", minimum=0, maximum=1)
+    return dict(value)
 
 
 def _parse_agent(value: Any, label: str, providers: Mapping[str, ProviderSpec]) -> AgentSpec:
@@ -907,6 +1043,10 @@ def _parse_agent(value: Any, label: str, providers: Mapping[str, ProviderSpec]) 
         f"{label}.generation",
         default={},
     )
+    _reject_inline_credentials(reasoning, f"{label}.reasoning")
+    _reject_inline_credentials(generation, f"{label}.generation")
+    _validate_model_options(_mapping(generation, f"{label}.generation"),
+                            _mapping(reasoning, f"{label}.reasoning"), providers[provider].type, label)
     profile = _pick(agent, ("profile", "profile_dimensions"), f"{label}.profile", default={})
     schedule = _pick(
         agent,
@@ -935,6 +1075,8 @@ def _parse_agent(value: Any, label: str, providers: Mapping[str, ProviderSpec]) 
     communication_style = agent.get("communication_style", "")
     if communication_style is None:
         communication_style = ""
+    if not isinstance(communication_style, (str, Mapping)):
+        raise ConfigError(f"{label}.communication_style must be text or an object")
     return AgentSpec(
         id=agent_id,
         display_name=_text(display_name, f"{label}.display_name"),
@@ -950,13 +1092,13 @@ def _parse_agent(value: Any, label: str, providers: Mapping[str, ProviderSpec]) 
         reasoning=_json_mapping(reasoning, f"{label}.reasoning"),
         generation=_json_mapping(generation, f"{label}.generation"),
         skills=_parse_skills(agent.get("skills", _MISSING), f"{label}.skills"),
-        profile=_json_mapping(profile, f"{label}.profile"),
+        profile=_parse_skills(profile, f"{label}.profile"),
         failure_modes=_string_list(agent.get("failure_modes", _MISSING), f"{label}.failure_modes"),
         communication_style=_json_value(communication_style, f"{label}.communication_style"),
-        work_schedule=_json_value(schedule, f"{label}.work_schedule"),
+        work_schedule=_schedule(schedule, f"{label}.work_schedule"),
         tools=_string_list(agent.get("tools", _MISSING), f"{label}.tools"),
         permissions=_string_list(agent.get("permissions", _MISSING), f"{label}.permissions"),
-        private_workspace=_json_value(workspace, f"{label}.private_workspace"),
+        private_workspace=_workspace(workspace, f"{label}.private_workspace"),
         initial_context=_json_value(context, f"{label}.initial_context"),
         ownership=_string_list(ownership, f"{label}.ownership"),
         metadata=_json_mapping(agent.get("metadata", _MISSING), f"{label}.metadata"),
@@ -980,9 +1122,9 @@ def _parse_priority(value: Any, label: str) -> int | str:
         raise ConfigError(f"{label} must be an integer or non-empty string")
     if isinstance(value, int):
         return value
-    if isinstance(value, str) and value.strip():
-        return value.strip()
-    raise ConfigError(f"{label} must be an integer or non-empty string")
+    if isinstance(value, str) and value in {"low", "medium", "high", "critical"}:
+        return value
+    raise ConfigError(f"{label} must be an integer or low, medium, high, critical")
 
 
 def _parse_task(value: Any, label: str) -> TaskSpec:
@@ -1020,7 +1162,7 @@ def _parse_task(value: Any, label: str) -> TaskSpec:
         acceptance_criteria=_json_list(
             task.get("acceptance_criteria", _MISSING), f"{label}.acceptance_criteria"
         ),
-        deadline=_optional_text(task.get("deadline", _MISSING), f"{label}.deadline"),
+        deadline=(_integer(task["deadline"], f"{label}.deadline", minimum=0) if task.get("deadline") is not None else None),
         metadata=_json_mapping(task.get("metadata", _MISSING), f"{label}.metadata"),
     )
 
@@ -1204,17 +1346,18 @@ _PROTOCOL_ITEM_KEYS = {
     "package",
     "trigger",
     "action",
-    "goal",
     "evidence",
     "enforcement",
-    "visibility",
-    "owner",
-    "participants",
     "rules",
-    "parameters",
-    "metadata",
     "definition",
 }
+
+_PROTOCOL_TEXT_FIELDS = {"trigger_condition", "enforcement_rule", "violation_condition",
+                         "exception_rule", "family", "scope", "success_metric",
+                         "enforcement_action", "sunset_rule"}
+_PROTOCOL_LIST_FIELDS = {"required_steps", "required_fields", "affected_agents", "affected_actions",
+                         "affected_artifacts", "benefits", "costs", "risks", "problem_evidence"}
+_PROTOCOL_ALIASES = {"trigger", "action", "rules", "evidence", "enforcement"}
 
 
 def _parse_protocol(value: Any, label: str) -> ProtocolSpec:
@@ -1229,23 +1372,29 @@ def _parse_protocol(value: Any, label: str) -> ProtocolSpec:
         raise ConfigError(f"{label}.source must be initial, loaded, or emergent")
     if source == "emergent":
         raise ConfigError(f"{label}.source cannot be emergent in protocols.initial")
-    definition: dict[str, Any] = {}
+    definition: dict[str, Any] = _json_mapping(protocol.get("definition", {}), f"{label}.definition")
+    _only_keys(definition, _PROTOCOL_TEXT_FIELDS | _PROTOCOL_LIST_FIELDS | _PROTOCOL_ALIASES | {"responsible_roles"}, f"{label}.definition")
+    for key in _PROTOCOL_TEXT_FIELDS & definition.keys():
+        _optional_text(definition[key], f"{label}.definition.{key}", default="")
+    for key in _PROTOCOL_LIST_FIELDS & definition.keys():
+        _string_list(definition[key], f"{label}.definition.{key}")
+    if "responsible_roles" in definition:
+        for role, members in _mapping(definition["responsible_roles"], f"{label}.definition.responsible_roles").items():
+            _string_list(members, f"{label}.definition.responsible_roles.{role}")
     for key in (
         "trigger",
         "action",
-        "goal",
         "evidence",
         "enforcement",
-        "visibility",
-        "owner",
-        "participants",
         "rules",
-        "parameters",
-        "metadata",
-        "definition",
     ):
         if key in protocol:
             definition[key] = _json_value(protocol[key], f"{label}.{key}")
+    for key in _PROTOCOL_ALIASES & definition.keys():
+        if key in {"trigger", "enforcement"} or isinstance(definition[key], str):
+            _text(definition[key], f"{label}.{key}")
+        else:
+            _string_list(definition[key], f"{label}.{key}")
     return ProtocolSpec(
         id=protocol_id,
         name=_text(protocol.get("name", protocol_id), f"{label}.name"),
@@ -1256,33 +1405,25 @@ def _parse_protocol(value: Any, label: str) -> ProtocolSpec:
     )
 
 
-def _parse_protocol_packages(value: Any, label: str, base_dir: Path | None) -> tuple[Any, ...]:
+def _parse_protocol_packages(value: Any, label: str, base_dir: Path | None) -> tuple[str, ...]:
+    """Protocol packages are ordinary JSON/YAML data, not executable plugins."""
+    import yaml
     if value is _MISSING or value is None:
         return ()
-    if not isinstance(value, list):
-        raise ConfigError(f"{label} must be a list")
-    packages = []
-    for index, item in enumerate(value):
-        item_label = f"{label}[{index}]"
-        if isinstance(item, str):
-            ref = _text(item, item_label)
-            if ref.endswith(".yaml") or ref.endswith(".yml") or ref.endswith(".json") or "/" in ref or "\\" in ref:
-                package_path = Path(ref)
-                if not package_path.is_absolute() and base_dir is not None:
-                    package_path = base_dir / package_path
-                if not package_path.expanduser().resolve().is_file():
-                    raise ConfigError(f"{item_label} package not found: {package_path}")
-            packages.append(ref)
-            continue
-        package = _mapping(item, item_label)
-        _only_keys(package, {"id", "name", "module", "path", "source", "metadata"}, item_label)
-        module = _optional_text(package.get("module", _MISSING), f"{item_label}.module")
-        path = _optional_text(package.get("path", _MISSING), f"{item_label}.path")
-        if module is None and path is None:
-            raise ConfigError(f"{item_label} must define module or path")
-        _import_plugin(module, path, item_label, base_dir)
-        packages.append(_json_value(package, item_label))
-    return tuple(packages)
+    references = _string_list(value, label)
+    for index, reference in enumerate(references):
+        path = Path(reference).expanduser()
+        path = path if path.is_absolute() or base_dir is None else base_dir / path
+        try:
+            payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, yaml.YAMLError) as exc:
+            raise ConfigError(f"{label}[{index}] cannot read protocol package: {reference}") from exc
+        if not isinstance(payload, Mapping) or set(payload) != {"protocols"} or not isinstance(payload["protocols"], list):
+            raise ConfigError(f"{label}[{index}] requires an object containing a protocols list")
+        parsed = [_parse_protocol(item, f"{label}[{index}].protocols[{i}]")
+                  for i, item in enumerate(payload["protocols"])]
+        _unique([item.id for item in parsed], f"{label}[{index}].protocols")
+    return references
 
 
 def _parse_protocols(value: Any, *, base_dir: Path | None) -> ProtocolsSpec:
@@ -1639,41 +1780,13 @@ def _parse_observability(value: Any) -> ObservabilitySpec:
 
 def _parse_runtime(value: Any, providers: Mapping[str, ProviderSpec]) -> RuntimeSpec:
     runtime = _mapping(value if value is not _MISSING else {}, "runtime")
-    _only_keys(
-        runtime,
-        {
-            "seed",
-            "ticks",
-            "decision_mode",
-            "provider",
-            "timeout",
-            "timeout_seconds",
-            "retries",
-            "retry_count",
-            "max_concurrent_agents",
-        },
-        "runtime",
-    )
-    provider_value = runtime.get("provider", _MISSING)
-    provider = _optional_text(provider_value, "runtime.provider", default="generic")
-    if provider not in {"generic", ""} and provider not in providers:
-        raise ConfigError(f"runtime.provider references unknown provider {provider!r}")
-    timeout = _pick(runtime, ("timeout_seconds", "timeout"), "runtime.timeout_seconds", default=60.0)
-    retries = _pick(runtime, ("retry_count", "retries"), "runtime.retry_count", default=0)
-    max_agents = runtime.get("max_concurrent_agents", _MISSING)
-    return RuntimeSpec(
-        seed=_integer(runtime.get("seed", _MISSING), "runtime.seed", default=42, minimum=0),
-        ticks=_integer(runtime.get("ticks", _MISSING), "runtime.ticks", default=72, minimum=1),
-        decision_mode=_text(runtime.get("decision_mode", "profile_policy"), "runtime.decision_mode"),
-        provider=provider or "generic",
-        timeout_seconds=_number(timeout, "runtime.timeout_seconds", minimum=0.001),
-        retry_count=_integer(retries, "runtime.retry_count", minimum=0),
-        max_concurrent_agents=(
-            _integer(max_agents, "runtime.max_concurrent_agents", minimum=1)
-            if max_agents is not _MISSING and max_agents is not None
-            else None
-        ),
-    )
+    _only_keys(runtime, {"seed", "ticks", "decision_mode"}, "runtime")
+    mode = _text(runtime.get("decision_mode", "profile_policy"), "runtime.decision_mode")
+    if mode not in {"profile_policy", "llm_direct", "flat_deterministic"}:
+        raise ConfigError("runtime.decision_mode must be profile_policy, llm_direct, or flat_deterministic")
+    return RuntimeSpec(seed=_integer(runtime.get("seed", 42), "runtime.seed", minimum=0),
+                       ticks=_integer(runtime.get("ticks", 72), "runtime.ticks", minimum=1),
+                       decision_mode=mode)
 
 
 def _validate_task_agent_refs(tasks: Sequence[TaskSpec], agents: Sequence[AgentSpec]) -> None:
@@ -1687,6 +1800,14 @@ def _validate_task_agent_refs(tasks: Sequence[TaskSpec], agents: Sequence[AgentS
                 f"tasks.{task.id}.collaborators references unknown agents: {', '.join(unknown)}"
             )
     task_ids = {task.id for task in tasks}
+    for task in tasks:
+        owners = {agent.id for agent in agents if task.id in agent.ownership}
+        if task.owner:
+            owners.add(task.owner)
+        if len(owners) > 1:
+            raise ConfigError(f"tasks.{task.id} has conflicting initial owners")
+        if owners.intersection(task.collaborators):
+            raise ConfigError(f"tasks.{task.id} requires collaborators distinct from its owner")
     for agent in agents:
         unknown = sorted(set(agent.ownership) - task_ids)
         if unknown:
@@ -1775,6 +1896,44 @@ def parse_generic_config(
     agents = _parse_agents(root["agents"], providers)
     tasks = _parse_tasks(root.get("tasks", _MISSING))
     _validate_task_agent_refs(tasks, agents)
+    known_agents = {agent.id for agent in agents}
+    file_ids = []
+    shared = organization.shared_workspace
+    shared_files = shared.get("files", []) if isinstance(shared, Mapping) else []
+    for index, item in enumerate((*organization.initial_documents, *organization.initial_artifacts, *shared_files)):
+        if isinstance(item, str):
+            file_ids.append(f"initial-{index}")
+            continue
+        item = _mapping(item, "organization.initial_files")
+        _only_keys(item, {"id", "title", "content", "summary", "owner"}, "organization.initial_files")
+        file_ids.append(_text(item.get("id"), "organization.initial_files.id"))
+        if item.get("owner") is not None and item["owner"] not in known_agents:
+            raise ConfigError("organization.initial_files.owner references an unknown agent")
+    for agent in agents:
+        workspace = agent.private_workspace
+        for index, item in enumerate(workspace.get("files", []) if isinstance(workspace, Mapping) else []):
+            file_ids.append(f"{agent.id}-private-{index}" if isinstance(item, str) else item["id"])
+            if isinstance(item, Mapping) and item.get("owner", agent.id) != agent.id:
+                raise ConfigError(f"agents.{agent.id}.private_workspace file owner must be that agent")
+    _unique(file_ids, "workspace file ids")
+    teams = organization.topology.get("teams", {})
+    if not isinstance(teams, Mapping):
+        raise ConfigError("organization.topology.teams must map team names to member lists")
+    for team, members in teams.items():
+        members = _string_list(members, f"organization.topology.teams.{team}")
+        if set(members) - known_agents:
+            raise ConfigError(f"organization.topology.teams.{team} references unknown agents")
+    for task in tasks:
+        calls = task.metadata.get("tool_calls", [])
+        if not isinstance(calls, list):
+            raise ConfigError(f"tasks.{task.id}.metadata.tool_calls must be a list")
+        for call in calls:
+            call = _mapping(call, f"tasks.{task.id}.metadata.tool_calls")
+            _only_keys(call, {"tool", "arguments"}, f"tasks.{task.id}.metadata.tool_calls")
+            if call.get("tool") not in tools.ids:
+                raise ConfigError(f"tasks.{task.id}.metadata.tool_calls references unknown tool")
+            _json_mapping(call.get("arguments", {}), f"tasks.{task.id}.tool_arguments")
+
     for agent in agents:
         unknown_tools = sorted(set(agent.tools) - set(tools.ids))
         if unknown_tools:
@@ -1782,10 +1941,61 @@ def parse_generic_config(
                 f"agents.{agent.id}.tools references unknown tools: {', '.join(unknown_tools)}"
             )
     governance = _parse_governance(root.get("governance", _MISSING), agents)
+    agent_by_id = {agent.id: agent for agent in agents}
+    tool_by_id = {tool.id: tool for tool in (*tools.builtins, *tools.plugins)}
+    def effective_permissions(agent):
+        return set(agent.permissions) | set(governance.role_permissions.get(agent.role, ()))
+    for task in tasks:
+        for member in task.collaborators:
+            collaborator = agent_by_id[member]
+            if "files" not in collaborator.tools or "review" not in effective_permissions(collaborator):
+                raise ConfigError(f"tasks.{task.id}.collaborators requires {member!r} to have files and review permission")
+        owner = task.owner or next((agent.id for agent in agents if task.id in agent.ownership), None)
+        candidates = [agent_by_id[owner]] if owner else [agent for agent in agents if agent.id not in task.collaborators]
+        required_tools = {call["tool"] for call in task.metadata.get("tool_calls", [])}
+        if required_tools:
+            eligible = [agent for agent in candidates if required_tools <= set(agent.tools)
+                        and all(set(tool_by_id[key].permissions) <= effective_permissions(agent)
+                                and (tool_by_id[key].side_effect_policy != "external" or "external" in effective_permissions(agent))
+                                for key in required_tools)]
+            if not eligible:
+                raise ConfigError(f"tasks.{task.id}.metadata.tool_calls has no eligible owner with the required tool grants and permissions")
     protocols = _parse_protocols(root.get("protocols", _MISSING), base_dir=base_dir)
     learning = _parse_learning(root.get("learning", _MISSING))
+    # These names describe the same acceptance thresholds. Normalize explicit
+    # aliases once so omitted section defaults cannot override a user's value.
+    thresholds = {}
+    raw_governance = root.get("governance", {})
+    raw_protocols = root.get("protocols", {})
+    raw_learning_protocol = root.get("learning", {}).get("protocol", {})
+    raw_learning_protocol = raw_learning_protocol if isinstance(raw_learning_protocol, Mapping) else {}
+    for field_name in ("adoption_threshold", "amendment_threshold"):
+        values = [section[key] for section, key in (
+            (raw_governance, "protocol_adoption_threshold" if field_name == "adoption_threshold" else field_name),
+            (raw_protocols, field_name), (raw_learning_protocol, field_name)) if key in section]
+        if field_name == "adoption_threshold" and "adoption_threshold" in raw_governance:
+            values.append(raw_governance["adoption_threshold"])
+        if len(set(values)) > 1:
+            raise ConfigError(f"conflicting {field_name} values; configure one threshold in governance")
+        thresholds[field_name] = float(values[0]) if values else 0.5
+    governance = replace(governance, protocol_adoption_threshold=thresholds["adoption_threshold"],
+                         amendment_threshold=thresholds["amendment_threshold"])
+    protocols = replace(protocols, **thresholds)
+    learning = replace(learning, protocol=replace(learning.protocol, **thresholds))
     runtime = _parse_runtime(root.get("runtime", _MISSING), providers)
     prompts = _parse_prompts(root.get("prompts", _MISSING), organization)
+    for asset in prompts.custom_prompt_assets_path:
+        path = Path(asset).expanduser()
+        path = path if path.is_absolute() or base_dir is None else base_dir / path
+        if not path.exists():
+            raise ConfigError(f"prompts.custom_prompt_assets_path does not exist: {asset}")
+    if prompts.task_context_template:
+        import string
+        allowed = {field.name for field in fields(TaskSpec)} | {"task_id"}
+        for _, name, _, _ in string.Formatter().parse(prompts.task_context_template):
+            if name is not None and name not in allowed:
+                raise ConfigError(f"prompts.task_context_template has unknown field {name!r}")
+
     observability = _parse_observability(root.get("observability", _MISSING))
     data = _normalized_data(
         organization=organization,

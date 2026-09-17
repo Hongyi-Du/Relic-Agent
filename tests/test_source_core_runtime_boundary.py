@@ -47,7 +47,7 @@ from relic_agent.config import load_config
 from relic_agent.runtime import OrganizationRuntime
 
 with tempfile.TemporaryDirectory() as directory:
-    result = OrganizationRuntime(load_config(Path('configs/minimal.yaml'))).run(
+    result = OrganizationRuntime(load_config(Path('configs/source-b3.yaml'))).run(
         output_root=directory, ticks=1, run_id='fresh-import-boundary'
     )
     manifest = json.loads(result.manifest_path.read_text(encoding='utf-8'))

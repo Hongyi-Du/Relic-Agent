@@ -28,6 +28,7 @@ agents:
   permissions:
   - assign_task
   - propose_protocol
+  - approve_protocol
 - id: reviewer
   display_name: Reviewer
   role: quality_reviewer

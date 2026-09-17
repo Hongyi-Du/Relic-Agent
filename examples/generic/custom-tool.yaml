@@ -77,6 +77,11 @@ tasks:
   - review-report
   acceptance_criteria:
   - Conclusion has supporting evidence
+  metadata:
+    tool_calls:
+    - tool: word_count
+      arguments:
+        text: A reproducible custom tool example
 governance:
   approval_mode: auto
   approver_members:

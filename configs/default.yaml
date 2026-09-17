@@ -37,7 +37,8 @@ agents:
 - id: member-2
   display_name: Quality Reviewer
   role: quality_reviewer
-  role_mandate: Contribute quality_reviewer expertise to the research report.
+  role_mandate: Review evidence during scheduled review windows and approve useful
+    coordination improvements.
   provider: local
   skills:
     research: 0.73
@@ -54,6 +55,8 @@ agents:
   - propose_protocol
   - approve_protocol
   - review
+  work_schedule:
+    interval_ticks: 12
 - id: member-3
   display_name: Data Engineer
   role: data_engineer
@@ -80,7 +83,7 @@ agents:
   role_mandate: Contribute analyst expertise to the research report.
   provider: local
   skills:
-    research: 0.7899999999999999
+    research: 0.79
     review: 0.8
   profile:
     openness: 0.8
@@ -140,7 +143,7 @@ agents:
   role_mandate: Contribute technical_writer expertise to the research report.
   provider: local
   skills:
-    research: 0.8799999999999999
+    research: 0.88
     review: 0.8
   profile:
     openness: 0.8
@@ -160,7 +163,7 @@ agents:
   role_mandate: Contribute project_manager expertise to the research report.
   provider: local
   skills:
-    research: 0.9099999999999999
+    research: 0.91
     review: 0.8
   profile:
     openness: 0.8
@@ -193,6 +196,34 @@ tasks:
   - review-report
   acceptance_criteria:
   - Conclusion has supporting evidence
+- id: methods-note
+  title: Compare the research methods
+  description: Document method choices and their limitations.
+  priority: 4
+  owner: member-4
+  collaborators:
+  - member-2
+  expected_deliverables:
+  - methods-note
+  acceptance_criteria:
+  - Method limitations are explicit.
+- id: validation-note
+  title: Validate the research conclusions
+  description: Review the completed notes and record validation evidence.
+  priority: 3
+  owner: member-6
+  collaborators:
+  - member-2
+  dependencies:
+  - research-note
+  - methods-note
+  input_artifacts:
+  - research-note
+  - methods-note
+  expected_deliverables:
+  - validation-note
+  acceptance_criteria:
+  - Conclusions cite the reviewed notes.
 governance:
   approval_mode: auto
   approver_members:

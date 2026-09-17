@@ -4,7 +4,7 @@ Use `relic-agent-v2` configuration to change organization members, roles, models
 tasks, tools, governance, protocols, prompts, and learning settings. You do not
 need to edit `SEED_TEAM`, `SEED_TASKS`, or `default_scenario()`.
 
-A genuinely new tool needs one Python plugin plus a `tools.plugins` entry and
+A new tool needs one Python plugin plus a `tools.plugins` entry and
 an agent tool grant. See [tools](tools.md). Provider adapters reuse the existing
 OrgEnv clients; see [providers](providers.md). New domain-specific workflows can
 build on the shared task and protocol interfaces without copying the simulation.

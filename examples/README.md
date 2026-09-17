@@ -25,3 +25,9 @@ integration tests. The mixed-provider example uses two independently configured
 mock providers so it is also runnable offline. Replace provider declarations with
 the live settings in [providers](../docs/providers.md) to use your own endpoints.
 The B3 research reference remains available with `relic-agent run-source-b3`.
+
+The research example has three tasks, including a dependent validation task.
+Its reviewer works every 12 ticks. Work waiting for those review windows creates
+real coordination friction for the shared reflection and governance machinery;
+protocols are not preloaded into that example. The mock drafts and approvals
+are deterministic fixtures, not claims about the quality of a live model's work.

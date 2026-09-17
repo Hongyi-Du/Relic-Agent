@@ -163,6 +163,8 @@ _AGENT_FIELD_KINDS = {
     "relevant_protocol_ids": "strings",
 }
 _TASK_FIELD_KINDS = {
+    "collaborators": "strings", "expected_deliverables": "strings",
+    "acceptance_criteria": "strings", "input_artifacts": "strings",
     "task_id": "string",
     "title": "string",
     "description": "string",
@@ -230,6 +232,12 @@ _PROPOSAL_FIELD_KINDS = {
     "repair_target_protocol_id": "string",
 }
 _PROTOCOL_FIELD_KINDS = {
+    "spec_id": "string",
+    "source_episode_ids": "strings",
+    "source_wish_ids": "strings",
+    "source_episode_id": "string",
+    "source_wish_id": "string",
+    "source_reflection_id": "string",
     "origin": "string",
     "protocol_id": "string",
     "protocol_type": "string",
@@ -418,6 +426,8 @@ _REPO_RECORD_FIELD_KINDS = {
 
 
 _CONFIG_SUMMARY_FIELD_KINDS = {
+    "inspector_enabled": "boolean",
+    "role_permissions": "string_lists_mapping",
     "description": "string", "channels": "strings", "decision_mode": "string",
     "features_enabled": "strings", "features_disabled": "strings",
     "approval_mode": "string", "deadlock_behavior": "string", "decision_visibility": "string",
@@ -436,6 +446,7 @@ _LINEAGE_FIELD_KINDS = {
     "source_reflection_ids": "strings", "generated_proposal_ids": "strings",
     "related_episode_ids": "strings", "source_reflection_id": "string",
     "source_episode_id": "string", "status": "string",
+    "created_from_proposal_id": "string", "source_wish_id": "string",
 }
 
 

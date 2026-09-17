@@ -80,7 +80,7 @@ def _public_agents(world: Any) -> list[dict[str, Any]]:
             provider = config.get("providers", {}).get(agent.get("provider"), {})
             row.update(display_name=agent.get("display_name", row["display_name"]),
                        tools=list(agent.get("tools", [])),
-                       permissions=list(agent.get("permissions", [])),
+                       permissions=sorted(set(agent.get("permissions", [])) | set(config.get("governance", {}).get("role_permissions", {}).get(agent.get("role"), []))),
                        provider=agent.get("provider", ""),
                        model=agent.get("model") or provider.get("default_model", ""))
     return rows
@@ -110,6 +110,11 @@ def _public_tasks(world: Any) -> list[dict[str, Any]]:
             if value is not None:
                 row[key] = value
         rows.append(row)
+    configured = {task["id"]: task for task in (getattr(world, "generic_config", {}) or {}).get("tasks", [])}
+    for row in rows:
+        spec = configured.get(row["task_id"], {})
+        for key in ("collaborators", "expected_deliverables", "acceptance_criteria", "input_artifacts"):
+            row[key] = _unique_strings(item for item in spec.get(key, []) if isinstance(item, str))
     return rows
 
 
@@ -226,13 +231,24 @@ def _public_protocols(world: Any) -> list[dict[str, Any]]:
         proposer = _text(getattr(protocol, "proposer_id", None)).strip()
         if proposer in agents:
             row["proposer_id"] = proposer
-        spec = (getattr(getattr(world, "proposal_manager", None), "protocol_specs", {}) or {}).get(protocol_id)
+        specs = getattr(getattr(world, "proposal_manager", None), "protocol_specs", {}) or {}
+        spec_id = next((key for key, value in getattr(world, "_generic_protocol_registry_ids", {}).items()
+                        if value == protocol_id), protocol_id)
+        spec = specs.get(spec_id)
+        if spec is None and protocol_id.startswith("proto_spec_"):
+            spec = specs.get("protospec_" + protocol_id.removeprefix("proto_spec_"))
         if spec is not None:
+            row["spec_id"] = spec.protocol_id
             for key in ("created_from_proposal_id", "trigger_condition", "enforcement_rule", "sunset_rule"):
                 value = getattr(spec, key, None)
                 if value:
                     row[key] = str(value)
             row["version"] = int(getattr(spec, "revision", 0)) + 1
+            for key in ("source_episode_ids", "source_wish_ids"):
+                row[key] = _unique_strings(getattr(spec, key, []) or [])
+            for key in ("source_episode_id", "source_wish_id", "source_reflection_id"):
+                if getattr(spec, key, None):
+                    row[key] = str(getattr(spec, key))
         origins = getattr(world, "protocol_origins", {}) or {}
         row["origin"] = origins.get(protocol_id, getattr(protocol, "origin", "emergent"))
         for key in ("created_from_proposal_id", "revision"):
@@ -265,6 +281,10 @@ def _public_protocols(world: Any) -> list[dict[str, Any]]:
                 if _number(value) is not None
             }
         rows.append(row)
+    if _private_governance(world):
+        for row in rows:
+            for key in ("proposer_id", "supporters", "opposers"):
+                row.pop(key, None)
     return rows
 
 
@@ -405,6 +425,18 @@ def _public_lineage(world: Any) -> list[dict[str, Any]]:
                 if value:
                     row[field] = str(value)
             rows.append(row)
+    if getattr(world, "generic_config", None):
+        for key, tool in getattr(world.proposal_manager, "tools", {}).items():
+            row = {"lineage_id": str(key), "kind": "tool",
+                   "tick": int(getattr(tool, "adopted_at_tick", 0)),
+                   "status": str(getattr(tool, "status", "active")),
+                   "source_episode_ids": _unique_strings(getattr(tool, "source_episode_ids", []))}
+            for field in ("created_from_proposal_id", "source_wish_id", "source_episode_id"):
+                if value := getattr(tool, field, None):
+                    row[field] = str(value)
+            if creator := getattr(tool, "creator_agent_id", None):
+                row["agent_id"] = str(creator)
+            rows.append(row)
     return rows
 
 
@@ -417,7 +449,8 @@ def _public_config(world: Any) -> dict[str, Any] | None:
     learning = config.get("learning", {})
     # Deliberate allowlists: provider endpoints, prompt text, plugin arguments,
     # memory, workspace paths, and secret environment values stay local.
-    summary = {"description": org.get("description", ""),
+    summary = {"inspector_enabled": config.get("observability", {}).get("inspector", True),
+               "description": org.get("description", ""),
                "channels": list(org.get("channels", [])),
                "decision_mode": config.get("runtime", {}).get("decision_mode", "profile_policy"),
                "features_enabled": sorted(k for k, v in learning.items() if v is True),
@@ -432,6 +465,7 @@ def _public_config(world: Any) -> dict[str, Any] | None:
     for key in ("approver_roles", "approver_members"):
         if key in governance:
             summary[key] = list(governance[key])
+    summary["role_permissions"] = {role: list(values) for role, values in governance.get("role_permissions", {}).items()}
     reflection = learning.get("reflection", {})
     if isinstance(reflection, dict):
         summary["reflection_enabled"] = reflection.get("enabled", True)
@@ -475,13 +509,14 @@ def project_public_frame(
         ),
     }
     frame["tool_events"] = [
-        {"event_id": str(event["event_id"]), "event_type": "tool_execution",
-         "tick": tick, "actor_id": str(event["actor_id"]),
-         "tool_id": str(event["tool_id"]), "status": str(event["status"]),
+        {"event_id": str(event.get("event_id", f"tool-use-{index}")),
+         "event_type": "tool_use" if event.get("type") == "tool_use_event" else "tool_execution",
+         "tick": tick, "actor_id": str(event.get("actor_id", event.get("agent_id", ""))),
+         "tool_id": str(event["tool_id"]), "status": str(event.get("status", "completed")),
          **({"error_type": str(event["error_type"])} if "error_type" in event else {})}
-        for event in getattr(world, "events", [])
-        if isinstance(event, dict) and event.get("type") == "tool_execution"
-        and event.get("tick") == tick and "event_id" in event
+        for index, event in enumerate(getattr(world, "events", []))
+        if isinstance(event, dict) and event.get("type") in {"tool_execution", "tool_use_event"}
+        and event.get("tick") == tick and "tool_id" in event
     ]
     frame["lineage"] = _public_lineage(world)
     summary = _public_config(world)

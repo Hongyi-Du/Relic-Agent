@@ -43,3 +43,18 @@ Each completed run writes a configuration snapshot, manifest, status, and public
 trace. Inspector and replay read the trace without calling models. Configuration
 snapshots are local run artifacts; keep initial private context out of shared
 artifacts. Public exports contain structural lineage rather than private text.
+
+Generic task `deadline` is an optional nonnegative tick number. Workspaces are
+virtual file stores: configure `shared_workspace` or `private_workspace` with
+`root` and a `files` list (`id`, `title`, `content`). Shared deliverables persist
+in `workspace.json`; private files stay out of that public workspace export.
+`organization-memory.json` records learned skills and company memory, and
+`protocols.json` is a reusable protocol package. `observability.local_debug`
+explicitly writes private local state to `debug.json`, still with credential
+redaction. `public_trace: false` suppresses trace output; `inspector: false`
+prevents serving that run in Inspector.
+
+`observability.token_logging: false` omits token totals throughout provider and
+agent metrics. `cost_logging: false` likewise omits cost estimates. Credentials
+always remain redacted. Provider credentials written directly into configuration
+are rejected before a run snapshot is created; use environment references.

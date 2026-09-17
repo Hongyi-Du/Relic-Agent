@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Sequence
 
 from dotenv import load_dotenv
+import yaml
 
 from relic_agent.config import ConfigError, load_config
 from relic_agent.inspector import inspector_static_root, serve_inspector
@@ -193,8 +194,9 @@ def _init_project(directory: Path) -> dict:
     if directory.exists() and any(directory.iterdir()):
         raise ValueError("init requires an empty or new directory")
     directory.mkdir(parents=True, exist_ok=True)
-    (directory / "organization.yaml").write_text(
-        _bundled_path("configs", "minimal.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    scaffold = yaml.safe_load(_bundled_path("configs", "minimal.yaml").read_text(encoding="utf-8"))
+    scaffold.setdefault("prompts", {})["custom_prompt_assets_path"] = ["prompts"]
+    (directory / "organization.yaml").write_text(yaml.safe_dump(scaffold, sort_keys=False), encoding="utf-8")
     (directory / ".env.example").write_text(
         "MODEL_API_KEY=\nMODEL_BASE_URL=https://api.openai.com/v1\n", encoding="utf-8")
     (directory / "tools").mkdir(exist_ok=True)
@@ -246,7 +248,6 @@ def _replay_summary(trace_path: Path) -> dict:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    load_dotenv()
     args = build_parser().parse_args(argv)
     try:
         if args.command == "init":

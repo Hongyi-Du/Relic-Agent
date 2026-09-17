@@ -284,6 +284,9 @@ def create_inspector_server(
     selected_host = _validate_host(host, allow_remote=allow_remote)
     static_root = inspector_static_root()
     trace_source = TraceSource(trace_path, mode)
+    summary = trace_source.read()["frames"][0]["organization"].get("config_summary", {})
+    if summary.get("inspector_enabled") is False:
+        raise InspectorError("Inspector is disabled by this organization configuration")
     server = InspectorServer((selected_host, port), InspectorRequestHandler)
     server.trace_source = trace_source
     server.static_root = static_root

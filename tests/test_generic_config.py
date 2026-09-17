@@ -20,9 +20,9 @@ def _payload(agent_count: int = 2) -> dict:
             "model": f"model-{index}",
             "skills": {"planning": 0.9, "review": 0.4},
             "profile": {"risk_tolerance": 0.3},
-            "work_schedule": {"kind": "steady", "hours": ["09:00", "17:00"]},
+            "work_schedule": {"hours": list(range(9, 18)), "weekdays": [0, 1, 2, 3, 4]},
             "tools": ["files", "task_board"],
-            "permissions": ["assign_task"],
+            "permissions": ["assign_task", "review"],
             "initial_context": {"brief": "work on the configured task"},
         }
         for index in range(agent_count)
@@ -68,7 +68,7 @@ def _payload(agent_count: int = 2) -> dict:
                 "input_artifacts": ["brief"],
                 "expected_deliverables": ["prototype", "report"],
                 "acceptance_criteria": ["prototype runs", "report is reviewable"],
-                "deadline": "2026-10-01",
+                "deadline": 48,
                 "metadata": {"kind": "generic"},
             }
         ],
@@ -224,7 +224,7 @@ def test_generic_config_rejects_duplicate_ids_and_bad_types(tmp_path: Path) -> N
 def test_custom_tool_plugin_is_imported_and_registered_locally(tmp_path: Path) -> None:
     plugin = tmp_path / "echo_plugin.py"
     plugin.write_text(
-        "def create_tool():\n    return {'name': 'echo'}\n",
+        "def create_tool(arguments, context):\n    return {'name': 'echo'}\n",
         encoding="utf-8",
     )
     payload = _payload()
@@ -251,4 +251,49 @@ def test_plugin_import_failure_is_reported_without_provider_validation(tmp_path:
     payload = _payload()
     payload["tools"]["plugins"] = [{"id": "missing", "module": "does.not.exist"}]
     with pytest.raises(ConfigError, match="plugin import failed"):
+        load_config(_write_config(tmp_path, payload))
+
+
+def test_protocol_package_is_validated_as_data_before_running(tmp_path):
+    payload = _payload()
+    package = tmp_path / 'protocols.json'
+    payload['protocols']['packages'] = ['protocols.json']
+    package.write_text('{"protocols": [{"id": "review", "definition": {"affected_actions": ["complete_task"]}}]}')
+    assert load_config(_write_config(tmp_path, payload)).data['protocols']['packages'] == ['protocols.json']
+    package.write_text('{"unexpected": []}')
+    with pytest.raises(ConfigError, match='protocols list'):
+        load_config(_write_config(tmp_path, payload))
+
+
+def test_provider_inline_credentials_are_rejected_before_any_run_snapshot(tmp_path):
+    payload = _payload()
+    payload['providers']['primary']['parameters'] = {'headers': {'Authorization':'Bearer private-test-token'}}
+    with pytest.raises(ConfigError, match='api_key_env') as exc:
+        load_config(_write_config(tmp_path, payload))
+    assert 'private-test-token' not in str(exc.value)
+
+
+def test_initial_state_rejects_ambiguous_ownership_and_private_file_collisions(tmp_path):
+    payload = _payload()
+    payload['agents'][1]['ownership'] = ['task-1']
+    with pytest.raises(ConfigError, match='conflicting initial owners'):
+        load_config(_write_config(tmp_path, payload))
+    del payload['agents'][1]['ownership']
+    payload['agents'][0]['private_workspace'] = {'files': [{'id':'brief','content':'private'}]}
+    with pytest.raises(ConfigError, match='duplicate'):
+        load_config(_write_config(tmp_path, payload))
+
+
+@pytest.mark.parametrize('options', [
+    {'parameters': {'ignored_option': True}},
+    {'parameters': {'wire_api': 'unsupported'}},
+    {'parameters': {'store_responses': 'false'}},
+    {'parameters': {'pricing': {'input_cost_per_1k': -1}}},
+    {'generation': {'max_tokens': 1.5}},
+    {'reasoning': {'ignored_option': True}},
+])
+def test_provider_rejects_unsupported_or_invalid_runtime_options(tmp_path, options):
+    payload = _payload()
+    payload['providers']['primary'] = {'type': 'openai_compatible', **options}
+    with pytest.raises(ConfigError):
         load_config(_write_config(tmp_path, payload))

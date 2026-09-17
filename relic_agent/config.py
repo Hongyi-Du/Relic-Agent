@@ -40,9 +40,6 @@ class RuntimeConfig:
     profile_causality: str = "source_recorded_no_op"
     capability_transfer: str = "empty_no_op"
     decision_mode: str = "source_profile_policy"
-    timeout_seconds: float = 60.0
-    retry_count: int = 0
-    max_concurrent_agents: int | None = None
 
 
 @dataclass(frozen=True)
@@ -184,9 +181,6 @@ def load_config(path: str | Path) -> OrganizationConfig:
                 profile_causality="generic",
                 capability_transfer="generic",
                 decision_mode=generic.runtime.decision_mode,
-                timeout_seconds=generic.runtime.timeout_seconds,
-                retry_count=generic.runtime.retry_count,
-                max_concurrent_agents=generic.runtime.max_concurrent_agents,
             ),
             source_path=source_path,
             digest=generic.digest,
