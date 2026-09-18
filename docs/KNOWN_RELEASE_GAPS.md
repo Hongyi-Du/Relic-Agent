@@ -13,6 +13,9 @@ organizations are configurable and need not reproduce a paper result.
 Public traces expose structured reflection/wish/proposal/protocol relationships,
 configuration summaries, work state, and lifecycle transitions. Private thoughts,
 memory, prompts, workspace contents, and provider traffic remain local.
+When inspecting a run on the same computer through the loopback-only server,
+the final shared workspace may be displayed separately; it is not serialized
+into the portable trace. Docker's remote-bind mode disables this local view.
 
 Provider protocol tests use deterministic clients and local HTTP fixtures.
 Actual access to a model and its gateway depends on the user's credentials and
@@ -25,3 +28,7 @@ third-party plugin marketplace. Distributed execution, hosted services, signed
 artifacts, cross-platform byte identity, and historical artifact reconstruction
 remain outside this stage. Tests stay in the ordinary repository; a `full-tests`
 branch is not required.
+
+The repository does not yet publish a software license or commercial license
+terms. Those documents require a decision from the rights holder; their absence
+must not be presented as a grant of reuse rights.

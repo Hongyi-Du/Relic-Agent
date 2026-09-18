@@ -63,8 +63,7 @@ The loader rejects the trace unless all of the following hold:
 - its SHA-256 covers the complete public payload as a self-consistency check
   (not an author signature or independent proof of run provenance);
 - frame sequence is contiguous and ticks are non-decreasing;
-- each frame contains at most one ordinary public event, so every published
-  event is paired with one post-event organization snapshot;
+- each runtime frame is a post-tick snapshot, not an event-level reconstruction;
 - core agents, tasks, proposals, and protocols are explicitly published;
 - all privacy flags are present and `false`;
 - nested public records use typed allowlists rather than arbitrary data
@@ -87,7 +86,7 @@ prompts, provider messages, or private memory.
 
 ## Interaction model
 
-Timeline selection moves to the event-level snapshot. The Object Inspector and
+Timeline selection moves to the selected tick snapshot. The Object Inspector and
 State Diff update to the same frame. Public relations make it possible to
 follow proposal → protocol → lifecycle event and to navigate back from task or
 repository records when those records publish typed protocol references.
@@ -102,6 +101,13 @@ The panels are:
 Artifacts, repository state, and evaluation annotations are optional. When a
 trace does not publish one of these collections, the panel says unavailable;
 it does not display a misleading zero.
+
+Generic runs publish shared artifact identifiers, versions, and task links in
+the portable trace, not their contents. On a native loopback Inspector for a
+completed run, the Artifacts panel additionally reads that run's `workspace.json`
+to show the final shared file bodies. This local-only view is not a historical
+per-tick reconstruction and is disabled when `--allow-remote` is used (including
+the Docker Compose Inspector). Private files and raw provider traffic stay out.
 
 The Inspector is descriptive evidence. Recorded sequence, object lineage, and
 state differences do not establish causal attribution to a protocol, member, or

@@ -108,7 +108,9 @@ def test_docker_and_compose_call_the_canonical_cli() -> None:
     assert service["read_only"] is True
     assert "./outputs:/data/runs" in service["volumes"]
     assert inspector["command"] == [
-        "inspect-example",
+        "inspect",
+        "--trace",
+        "/data/runs/first/trace.json",
         "--host",
         "0.0.0.0",
         "--port",

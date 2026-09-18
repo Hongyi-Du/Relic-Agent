@@ -51,6 +51,22 @@ amendment thresholds in `governance`; aliases in `protocols` and
 `learning.protocol` normalize to the same value, and conflicting values are
 rejected. This lets a configured threshold below the default take effect too.
 
+The generic executable gate supports organization-wide `scope: org` (also
+`organization`), `scope: shared tasks` (tasks with `team` or `public`
+visibility), or `scope: task:<existing-task-id>`. It does not infer team
+membership from a generic `team` scope. `affected_agents` may name
+member IDs or `role:<role>`; an empty list applies to everyone in scope.
+`trigger_condition` supports an exact generic action or the documented action
+aliases, including `before completing a task`. `enforcement_action: block`
+rejects a missing task artifact/evidence/review, while `notify` records the
+violation without blocking the action. These evidence checks currently run for
+task completion and document/PR review, not arbitrary tool or messaging calls.
+`required_steps` may carry human-readable checklist prose, but that prose is
+not an executable predicate. Unsupported trigger, scope, enforcement mode, or
+member selector is rejected on load rather than silently widened to the whole
+organization. The public Inspector shows the published rule fields and
+enforcement events, not private deliberation text.
+
 `learning.reflection` controls cadence, per-agent cooldown and salience.
 `learning.wish` controls caps and deduplication; `learning.proposal` controls
 promotion and caps; `learning.protocol` controls protocol lifecycle parameters.

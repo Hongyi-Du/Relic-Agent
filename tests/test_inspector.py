@@ -32,8 +32,9 @@ def _resign(payload: dict) -> dict:
 
 
 @contextmanager
-def _running_server(trace_path: Path, *, mode: str = "replay"):
-    server = create_inspector_server(trace_path=trace_path, port=0, mode=mode)
+def _running_server(trace_path: Path, *, mode: str = "replay", allow_remote: bool = False):
+    server = create_inspector_server(trace_path=trace_path, port=0, mode=mode,
+                                     allow_remote=allow_remote)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -108,6 +109,19 @@ def test_inspector_serves_only_allowlisted_routes_with_security_headers(tmp_path
         status, _, head_body = _request(server, "/app.js", method="HEAD")
         assert status == 200
         assert head_body == b""
+
+
+def test_final_shared_files_are_local_only_and_absent_from_public_trace(tmp_path: Path) -> None:
+    trace, trace_path = _generated_trace(tmp_path)
+    artifacts = trace["frames"][-1]["artifacts"]
+    assert any(item["artifact_id"] == "artifact:research-note" for item in artifacts)
+    assert "Deterministic draft:" not in json.dumps(trace)
+    with _running_server(trace_path) as server:
+        status, _, body = _request(server, "/api/local-workspace")
+        assert status == 200
+        assert any("Deterministic draft:" in item["content"] for item in json.loads(body)["files"])
+    with _running_server(trace_path, allow_remote=True) as server:
+        assert _request(server, "/api/local-workspace")[0] == 404
 
 
 @pytest.mark.replay

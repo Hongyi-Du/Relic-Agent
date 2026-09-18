@@ -1,20 +1,20 @@
 # Relic Agent documentation
 
-This directory documents the standalone, source-native B3 release.  It does
-not document the paper benchmark, HCI study, CooperBench, or an external
-evaluator.
+This directory documents the configurable Relic Agent runtime and its separate
+canonical B3 compatibility preset. Paper benchmarks, HCI studies, CooperBench,
+and external evaluators belong to the Relic research repository.
 
 - [Installation](installation.md) — supported platforms, `uv`, WSL2, and
   environment variables.
 - [Docker](docker.md) — the Docker and Compose entry points.
-- [Configuration](configuration.md) — the deliberately narrow shipped
-  configuration surface.
+- [Configuration](configuration.md) — organization, members, providers, tasks,
+  tools, and governance configuration.
 - [Architecture](architecture.md) — what executes in a run and what is only a
   public projection.
 - [Protocol lifecycle](protocol_lifecycle.md) — source lifecycle terms and the
   public observability boundary.
-- [Extension guide](extension_guide.md) — supported customization today and
-  the work still required for a generic organization API.
+- [Extension guide](extension_guide.md) — supported customization and current
+  extension boundaries.
 - [Inspector](inspector.md) — trace validation, privacy, replay, and live
   viewing semantics.
 - [Reproduction guide](reproduction.md) — repeatable local/Docker commands and

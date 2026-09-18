@@ -243,6 +243,10 @@ def _public_protocols(world: Any) -> list[dict[str, Any]]:
                 value = getattr(spec, key, None)
                 if value:
                     row[key] = str(value)
+            for key in ("required_steps", "required_fields", "affected_agents",
+                        "affected_actions", "affected_artifacts"):
+                row[key] = _unique_strings(getattr(spec, key, ()) or ())
+            row["enforcement_action"] = _text(getattr(spec, "enforcement_action", None), "block")
             row["version"] = int(getattr(spec, "revision", 0)) + 1
             for key in ("source_episode_ids", "source_wish_ids"):
                 row[key] = _unique_strings(getattr(spec, key, []) or [])
@@ -575,6 +579,16 @@ def project_public_frame(
         and event.get("tick") == tick and "tool_id" in event
     ]
     frame["lineage"] = _public_lineage(world)
+    if getattr(world, "generic_config", None):
+        # Structural public records only. Shared file bodies are available in
+        # the local run workspace, never in a portable public trace.
+        frame["artifacts"] = [
+            {"artifact_id": f"artifact:{file.object_id}", "artifact_type": _text(file.file_type, "doc"),
+             "title": _text(file.title), "version": int(file.version),
+             "status": "available", "related_task_ids": _unique_strings(file.linked_task_ids)}
+            for file in (getattr(getattr(world, "company", None), "files", {}) or {}).values()
+            if _enum_text(getattr(file, "visibility", None)) in {"team", "public"}
+        ]
     summary = _public_config(world)
     if summary is not None:
         frame["organization"]["config_summary"] = summary

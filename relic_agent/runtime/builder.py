@@ -91,7 +91,7 @@ class GenericActionMapper:
                     candidates.append(ActionCandidate("complete_task", {"task_id": task_id}))
             elif (aid in spec["collaborators"] and "files" in tools
                   and "review" in world.tool_registry.permissions(aid) and world.deliverables_ready(task_id)):
-                if aid not in world.task_reviews.get(task_id, set()):
+                if aid not in world.current_task_reviews(task_id):
                     candidates.append(ActionCandidate("review_doc", {"task_id": task_id}))
         permissions = world.tool_registry.permissions(aid)
         for proposal in world.proposal_manager.proposals.values():
@@ -210,7 +210,8 @@ class GenericExecution:
             elif action == "send_message":
                 outcome = world.tool_registry.execute(aid, "messaging", {
                     "channel": params["channel"],
-                    "text": f"{world.agents[aid].name} is available to coordinate shared work."})
+                    "text": params.get("text") or
+                    f"{world.agents[aid].name} is available to coordinate shared work."})
             else:
                 raise ValueError("unsupported generic action")
             result.success = outcome.get("status") == "completed"
@@ -452,6 +453,11 @@ class GenericOrgWorld(OrgWorld):
         return candidates
 
     def _llm_decide(self, aid, agent, perception, candidates):
+        # Read only the newest messages in channels this member can currently
+        # access.  Mark them read after the provider actually receives them;
+        # a failed request must not silently consume the inbox.
+        unread = [message for message in self.comm.perceivable_messages(aid)
+                  if aid not in message.read_by and message.sender_id != aid][-10:]
         context = {
             "tools": self.tool_registry.catalog(aid),
             "tasks": [{**spec, "owner": self.tasks[key].owner_id, "status": _status(self.tasks[key])}
@@ -462,16 +468,26 @@ class GenericOrgWorld(OrgWorld):
                           if proposal.status == "under_review" and aid in proposal.approval_required_from],
             "available_actions": [{"index": i, "action": candidate.action_type, "arguments": candidate.parameters}
                                   for i, candidate in enumerate(candidates)],
+            "new_messages": [{"id": message.message_id, "from": message.sender_id,
+                              "channel": message.channel_id, "text": message.full_text[:1000],
+                              "linked_objects": message.linked_objects[:10]}
+                             for message in unread],
         }
         response = self.provider_registry.generate_json_for_agent(
             aid, self.agent_prompt(aid),
             json.dumps(context),
             {"type": "object", "properties": {"index": {"type": "integer"}, "arguments": {"type": "object"}}, "required": ["index"]})
+        for message in unread:
+            self.comm.mark_read(aid, message.message_id)
         index = response.get("index")
         if isinstance(index, int) and not isinstance(index, bool) and 0 <= index < len(candidates):
             candidate = candidates[index]
             if candidate.action_type == "use_tool" and isinstance(response.get("arguments"), dict):
                 candidate.parameters["arguments"] = response["arguments"]
+            if candidate.action_type == "send_message" and isinstance(response.get("arguments"), dict):
+                text = response["arguments"].get("text")
+                if isinstance(text, str) and text.strip():
+                    candidate.parameters["text"] = text[:2000]
             return candidate
         return None
 
@@ -565,13 +581,24 @@ class GenericOrgWorld(OrgWorld):
             approved, feedback = review["approved"] is True, str(review["feedback"])
         self.private_review_notes[(task_id, aid)] = feedback
         if approved:
-            self.task_reviews.setdefault(task_id, set()).add(aid)
+            self.task_reviews.setdefault(task_id, {})[aid] = self._reviewed_artifacts(task_id)
         else:
             self.task_revision_requests.add(task_id)
-            self.task_reviews[task_id] = set()
+            self.task_reviews[task_id] = {}
         self.tasks[task_id].progress_evidence.append({"kind": "review", "agent_id": aid, "tick": self.world_tick,
-                                                    "approved": approved})
+                                                    "approved": approved,
+                                                    "artifact_versions": self.task_reviews.get(task_id, {}).get(aid, {})})
         return {"status": "completed" if approved else "pending", "error_type": "ChangesRequested"}
+
+    def _reviewed_artifacts(self, task_id):
+        """Version receipt for exactly the artifacts linked to this task."""
+        return {file.object_id: (file.version, file.content_hash)
+                for file in self.company.files.values() if task_id in file.linked_task_ids}
+
+    def current_task_reviews(self, task_id):
+        current = self._reviewed_artifacts(task_id)
+        return {aid for aid, receipt in self.task_reviews.get(task_id, {}).items()
+                if receipt == current}
 
     def complete_generic_task(self, aid, task_id, arguments):
         task = self.tasks[task_id]
@@ -586,7 +613,7 @@ class GenericOrgWorld(OrgWorld):
             return {"status": "pending", "error_type": "MissingDeliverables"}
         if any(_status(self.tasks[key]) not in _TERMINAL for key in task.dependencies):
             return {"status": "pending", "error_type": "PendingDependencies"}
-        if not set(self.task_specs[task_id]["collaborators"]) <= self.task_reviews.get(task_id, set()):
+        if not set(self.task_specs[task_id]["collaborators"]) <= self.current_task_reviews(task_id):
             return {"status": "pending", "error_type": "PendingReview"}
         spec = self.task_specs[task_id]
         if not spec["collaborators"] and spec["acceptance_criteria"]:

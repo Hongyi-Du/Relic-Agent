@@ -63,9 +63,9 @@ already visible in the process.
 and related legacy governance/event modules are retained only for historical
 API compatibility and audit tests. They are lazily isolated: a fresh
 `relic-agent` CLI process does not import them, and they are not an execution
-fallback. The old generic YAML and clock/trace runtime have been removed from
-the default path; an unsupported generic organization config fails before a
-run begins.
+fallback. The public `relic-agent-v2` generic configuration now uses the
+shared OrgWorld lifecycle with a generic builder; the canonical B3 preset
+retains its pinned source verification.
 
 ## Public-output boundary
 

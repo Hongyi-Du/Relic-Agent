@@ -1478,6 +1478,26 @@ class GenericLifecycle:
                     return item[key]
             return default
 
+        trigger = str(first("trigger_condition", "trigger", default="") or "").strip()
+        supported_trigger = _token(trigger) in self._KNOWN_ACTIONS | set(self._ACTION_GROUPS) | {
+            "before_completing_a_task", "before_completing_task", "before_task_completion",
+            "before_reviewing_a_document", "before_reviewing_a_pr",
+        }
+        if trigger and not supported_trigger:
+            raise ValueError(f"protocol {pid}: unsupported trigger_condition {trigger!r}")
+        scope = str(first("scope", default="org") or "org").strip()
+        if scope not in {"org", "organization", "shared tasks"}:
+            if not scope.startswith("task:") or scope[5:] not in world.tasks:
+                raise ValueError(f"protocol {pid}: unsupported scope {scope!r}")
+        enforcement = str(first("enforcement_action", default="") or "").strip().lower()
+        if enforcement not in {"", "block", "notify"}:
+            raise ValueError(f"protocol {pid}: unsupported enforcement_action {enforcement!r}")
+        affected = ensure_list(first("affected_agents", default=[]))
+        if any(aid not in world.agents and
+               not (aid.startswith("role:") and aid[5:] in
+                    {str(agent.role) for agent in world.agents.values()}) for aid in affected):
+            raise ValueError(f"protocol {pid}: unknown affected_agents")
+
         responsible = first("responsible_roles", default={})
         if not isinstance(responsible, Mapping):
             responsible = {}
@@ -1496,7 +1516,7 @@ class GenericLifecycle:
         spec = ProtocolSpec(
             protocol_id=pid,
             name=str(item.get("name", pid)),
-            trigger_condition=str(first("trigger_condition", "trigger", default="") or ""),
+            trigger_condition=trigger,
             required_steps=ensure_list(first("required_steps", "rules", default=[])),
             required_fields=ensure_list(first("required_fields", "evidence", default=[])),
             enforcement_rule=str(
@@ -1511,12 +1531,12 @@ class GenericLifecycle:
             exception_rule=first("exception_rule", default=None),
             family=str(first("family", default="") or ""),
             problem_evidence=ensure_list(first("problem_evidence", default=[])),
-            scope=str(first("scope", default=item.get("scope", "org")) or "org"),
+            scope=scope,
             responsible_roles=responsible_roles,
             success_metric=str(first("success_metric", default="") or ""),
-            enforcement_action=str(first("enforcement_action", default="") or ""),
+            enforcement_action=enforcement or "block",
             sunset_rule=str(first("sunset_rule", default="") or ""),
-            affected_agents=ensure_list(first("affected_agents", default=[])),
+            affected_agents=affected,
             affected_actions=ensure_list(
                 first("affected_actions", "action", "actions", default=[])
             ),
@@ -1614,23 +1634,24 @@ class GenericLifecycle:
             return False
         if wanted in cls._expand_action(text):
             return True
+        words = text.replace("_", " ")
         # Trigger conditions often read ``before completing a task`` rather
         # than carrying a machine action id.  Keep this fallback deliberately
         # narrow so a generic word such as ``work`` does not govern every act.
         if wanted == "complete_task" and re.search(
-            r"\b(complete|completion|finish|finished|mark_.*done)\b", text
+            r"\b(complete|completing|completion|finish|finished)\b", words
         ):
             return True
         if wanted in {"review_doc", "review_pr"} and re.search(
-            r"\b(review|reviewer|signoff|sign_off)\b", text
+            r"\b(review|reviewing|reviewer|signoff|sign off)\b", words
         ):
             return True
         if wanted == "approve_proposal" and re.search(
-            r"\b(approve|approval|adopt|adoption)\b", text
+            r"\b(approve|approval|adopt|adoption)\b", words
         ):
             return True
         if wanted in {"complete_task", "review_doc", "review_pr"} and re.search(
-            r"\b(evidence|deliverable|artifact|trace|source)\b", text
+            r"\b(evidence|deliverable|artifact|trace|source)\b", words
         ):
             return True
         return False
@@ -1658,9 +1679,8 @@ class GenericLifecycle:
         return False
 
     def _matching_protocols(
-        self, action: str, task_id: str | None = None
+        self, action: str, task_id: str | None = None, agent_id: str | None = None
     ) -> list[tuple[str, Any]]:
-        del task_id  # reserved for callers that want matching + gate context
         pm = self.world.proposal_manager
         result = []
         for pid, spec in pm.protocol_specs.items():
@@ -1670,6 +1690,19 @@ class GenericLifecycle:
             protocol = self.world.protocol_registry.protocols.get(registry_id)
             if protocol is None or getattr(protocol, "adoption_status", "") != "adopted":
                 continue
+            scope = str(getattr(spec, "scope", "org") or "org")
+            if scope.startswith("task:") and task_id != scope[5:]:
+                continue
+            if scope == "shared tasks":
+                task = (getattr(self.world, "tasks", {}) or {}).get(task_id)
+                if _text(getattr(task, "visibility", "")).lower() not in {"team", "public"}:
+                    continue
+            affected = set(getattr(spec, "affected_agents", []) or [])
+            if agent_id and affected:
+                agent = self.world.agents.get(agent_id)
+                role = str(getattr(agent, "role", ""))
+                if agent_id not in affected and f"role:{role}" not in affected:
+                    continue
             if self._protocol_applies(spec, action):
                 result.append((pid, spec))
         return result
@@ -1818,9 +1851,9 @@ class GenericLifecycle:
                     .get("collaborators", getattr(task, "collaborators", []))
                     or []
                 )
-                reviewed = set(
-                    (getattr(self.world, "task_reviews", {}) or {}).get(task_id, set())
-                )
+                current_reviews = getattr(self.world, "current_task_reviews", None)
+                reviewed = (current_reviews(task_id) if callable(current_reviews) else set(
+                    (getattr(self.world, "task_reviews", {}) or {}).get(task_id, set())))
                 if collaborators - reviewed:
                     return "missing_review"
         elif action in {"review_doc", "review_pr"} and requires_evidence:
@@ -1832,10 +1865,16 @@ class GenericLifecycle:
     def before_action(self, agent_id: str, action: str, task_id: str | None = None) -> bool:
         if not self.learning.get("executable_workflow", True):
             return True
-        for _, spec in self._matching_protocols(action, task_id):
+        for pid, spec in self._matching_protocols(action, task_id, agent_id):
             if getattr(spec, "status", "") in {"deprecated", "retired", "obsolete"}:
                 return False
-            if self._protocol_gate_failure(spec, action, task_id) is not None:
+            failure = self._protocol_gate_failure(spec, action, task_id)
+            if failure is not None:
+                if getattr(spec, "enforcement_action", "block") == "notify":
+                    self._record_protocol_violation(agent_id, pid, spec, task_id,
+                                                    int(self.world.world_tick), reason=failure,
+                                                    blocked=False)
+                    continue
                 return False
         return True
 
@@ -1884,6 +1923,7 @@ class GenericLifecycle:
         tick: int,
         result: Any = None,
         reason: str = "protocol_violation",
+        blocked: bool = True,
     ) -> None:
         registry_id = self.world._generic_protocol_registry_ids.get(pid, pid)
         try:
@@ -1916,7 +1956,7 @@ class GenericLifecycle:
                 registry_id,
                 tick,
                 violation_event_id=event.event_id,
-                blocked=True,
+                blocked=blocked,
                 context_id=f"action@{tick}",
             )
         except (KeyError, ValueError):
@@ -1932,7 +1972,7 @@ class GenericLifecycle:
                 "agent_id": "organizational_gate",
                 "tick": tick,
                 "object_id": task_id,
-                "blocked": True,
+                "blocked": blocked,
                 "reason_code": reason,
             }
             self.world.events.append(enforcement_raw)
@@ -1970,7 +2010,7 @@ class GenericLifecycle:
                     break
         if not self.learning.get("executable_workflow", True):
             return
-        for pid, spec in self._matching_protocols(action, task_id):
+        for pid, spec in self._matching_protocols(action, task_id, agent_id):
             if result.success:
                 self._record_protocol_use(agent_id, pid, spec, task_id, tick, result)
             elif friction or protocol_blocked:

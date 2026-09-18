@@ -22,19 +22,27 @@ mkdir -p outputs
 docker compose build relic-agent-runtime
 docker compose run --rm relic-agent-runtime check-env
 docker compose run --rm relic-agent-runtime smoke --output-root /data/runs
-docker compose run --rm relic-agent-runtime run-minimal --output-root /data/runs
-docker compose run --rm relic-agent-runtime run-default --output-root /data/runs
+docker compose run --rm relic-agent-runtime run-minimal --output-root /data/runs --run-id first
 docker compose run --rm relic-agent-runtime replay-example
 docker compose up relic-inspector
 ```
 
 Generated run directories appear under host `./outputs`. Removing a container
-does not remove those runs. `smoke`, `run-minimal`, and `run-default` all use
+does not remove those runs. The Inspector command above reads the `first` run
+you just produced; it fails explicitly if that run is missing. To run the
+larger example separately, use `docker compose run --rm relic-agent-runtime
+run-default --output-root /data/runs --run-id default-example`. `smoke`,
+`run-minimal`, and `run-default` all use
 the same source-native `OrgWorld` host; `run-default` is the canonical 72-tick
-workflow path. The `relic-inspector` service publishes the bundled public
-replay sample at `http://127.0.0.1:${RELIC_AGENT_INSPECTOR_PORT:-8765}`. Its host-side
+workflow path. The `relic-inspector` service shows `outputs/first/trace.json`
+at `http://127.0.0.1:${RELIC_AGENT_INSPECTOR_PORT:-8765}`. Its host-side
 mapping remains loopback-only even though the process binds all interfaces
 inside the isolated container.
+
+The Docker service serves only the portable public trace and structural
+artifact records. To read shared file bodies in the Inspector, use the native
+loopback command `relic-agent inspect --trace outputs/first/trace.json` on the
+same machine. The local-only workspace endpoint is disabled for `--allow-remote`.
 
 Inspect a trace under the read-only `/data/runs` mount:
 

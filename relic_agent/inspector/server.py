@@ -154,6 +154,19 @@ class InspectorRequestHandler(BaseHTTPRequestHandler):
         if path == "/api/trace":
             self._send_json(HTTPStatus.OK, self.server.trace_source.read(), body=body)
             return
+        if path == "/api/local-workspace" and not self.server.allow_remote:
+            # Only the run's own shared workspace, and only on the loopback
+            # server. Never fold these bodies into an exportable public trace.
+            workspace = self.server.trace_source.path.parent / "workspace.json"
+            try:
+                payload = json.loads(workspace.read_text(encoding="utf-8"))
+                if not isinstance(payload, dict) or not isinstance(payload.get("files"), list):
+                    raise ValueError("invalid local workspace")
+            except (OSError, ValueError):
+                self._send_json(HTTPStatus.NOT_FOUND, {"status": "not_available"}, body=body)
+                return
+            self._send_json(HTTPStatus.OK, {"files": payload["files"]}, body=body)
+            return
         static = self._STATIC_FILES.get(path)
         if static is None:
             self._send_json(HTTPStatus.NOT_FOUND, {"status": "not_found"}, body=body)

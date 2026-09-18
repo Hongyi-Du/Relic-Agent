@@ -2,6 +2,7 @@
 
 const state = {
   trace: null,
+  localWorkspace: null,
   health: null,
   frameIndex: 0,
   panel: "overview",
@@ -177,6 +178,18 @@ function metric(label, value) {
   return card;
 }
 
+function sectionHeading(title, panel) {
+  const heading = element("div", "section-heading");
+  heading.append(element("h2", "", title));
+  if (panel) {
+    const jump = element("button", "section-jump", "View all →");
+    jump.type = "button";
+    jump.addEventListener("click", () => { state.panel = panel; render(); });
+    heading.append(jump);
+  }
+  return heading;
+}
+
 function keyValueCard(title, identity, rows, labels = []) {
   const card = element("article", "card");
   const heading = element("div", "card-heading");
@@ -206,56 +219,81 @@ function keyValueCard(title, identity, rows, labels = []) {
 function renderOverview(container) {
   const frame = currentFrame();
   const org = organization(frame);
-  if (org.config_summary) {
-    container.append(keyValueCard("Organization configuration", null, Object.entries(org.config_summary)));
-  }
   const agents = asArray(org.agents);
   const tasks = asArray(org.tasks);
   const protocols = asArray(org.protocols);
-  const episodes = asArray(frame.episodes);
   const activeTasks = tasks.filter((item) => !["done", "merged", "released", "abandoned"].includes(item.status));
-  const openEpisodes = episodes.filter((item) => item.status === "open");
   const activeProtocols = protocols.filter((item) => item.status === "active" || item.adoption_status === "adopted");
 
   const metrics = element("div", "metric-grid");
   append(
     metrics,
     metric("Active members", agents.filter((item) => item.status !== "inactive").length),
-    metric("Active tasks", activeTasks.length),
+    metric("Open tasks", activeTasks.length),
     metric("Active protocols", activeProtocols.length),
-    metric("Open episodes", openEpisodes.length),
+    metric("Proposals", asArray(org.proposals).length),
   );
   container.append(metrics);
 
+  const panorama = element("div", "panorama");
+  const work = element("section", "panorama-section");
+  work.append(sectionHeading("Work in motion", "tasks"));
+  activeTasks.slice(0, 6).forEach((task) => {
+    const row = element("div", "work-row");
+    row.append(objectLink(task.task_id, task.title || task.task_id));
+    row.append(statusPill(task.status));
+    if (task.owner_id) row.append(objectLink(task.owner_id));
+    work.append(row);
+  });
+  if (!activeTasks.length) work.append(emptyState("No open task at this tick."));
+  const people = element("section", "panorama-section");
+  people.append(sectionHeading("Members", "members"));
+  agents.slice(0, 8).forEach((agent) => {
+    const row = element("div", "member-row");
+    const identity = element("div", "member-identity");
+    identity.append(element("span", "member-initial", (agent.display_name || agent.agent_id || "?").slice(0, 1)));
+    const name = element("div");
+    name.append(objectLink(agent.agent_id, agent.display_name || agent.agent_id));
+    name.append(element("small", "", agent.role || "Member"));
+    identity.append(name);
+    row.append(identity, element("span", "member-count", `${asArray(agent.active_task_ids).length} tasks`));
+    people.append(row);
+  });
+  panorama.append(work, people);
+  container.append(panorama);
+
+  container.append(sectionHeading("Organization rules", "protocols"));
+  if (!protocols.length) container.append(emptyState("No published protocol at this tick."));
+  protocols.slice(0, 5).forEach((protocol) => {
+    const row = element("div", "protocol-row");
+    const label = element("div", "protocol-main");
+    label.append(objectLink(protocol.protocol_id, protocol.enforcement_rule || protocol.rule_summary || protocol.protocol_id));
+    label.append(element("small", "", protocol.trigger_condition || protocol.target_process || protocol.protocol_id));
+    row.append(label, statusPill(protocol.adoption_status));
+    container.append(row);
+  });
+
+  const events = allEvents().filter((item) => item.frameIndex <= state.frameIndex).slice(-6).reverse();
+  container.append(sectionHeading("Recent public activity", "timeline"));
+  if (!events.length) container.append(emptyState("No published activity at this tick."));
+  else container.append(renderEventList(events));
+
   const privacy = state.trace.privacy || {};
-  const notice = element("div", "notice");
+  const boundary = element("details", "trace-boundary");
+  boundary.append(element("summary", "", "About this public trace"));
   const privacyText = [
     privacy.private_reflections_included ? "private reflections present" : "private reflections excluded",
     privacy.private_memories_included ? "private memories present" : "private memories excluded",
     privacy.provider_messages_included ? "provider messages present" : "provider messages excluded",
   ].join(" · ");
-  append(notice, element("strong", "", "Public trace boundary. "), document.createTextNode(privacyText));
-  const causalNotice = element("div", "notice");
-  append(
-    causalNotice,
-    element("strong", "", "Descriptive evidence only. "),
-    document.createTextNode(
-      "Observed lineage and state differences record sequence and provenance; they do not establish causal attribution to a protocol, member, or mechanism.",
-    ),
-  );
-  causalNotice.append(
-    element(
-      "p",
-      "",
-      "HCI-facing use is an interface demonstration or formative artifact unless separately supported by reviewed participant-study evidence; it is not a powered participant evaluation.",
-    ),
-  );
-  container.append(sectionTitle("Trace contract"), notice, causalNotice);
-
-  const events = allEvents().filter((item) => item.frameIndex <= state.frameIndex).slice(-6).reverse();
-  container.append(sectionTitle("Recent public events"));
-  if (!events.length) container.append(emptyState("No public events have been emitted yet."));
-  else container.append(renderEventList(events));
+  boundary.append(element("p", "", `${privacyText}. Tick snapshots and lineage do not establish causal attribution. This is not a powered participant evaluation.`));
+  if (org.config_summary) {
+    const config = element("details", "trace-boundary");
+    config.append(element("summary", "", "Run configuration"));
+    config.append(keyValueCard("Configuration", null, Object.entries(org.config_summary)));
+    boundary.append(config);
+  }
+  container.append(boundary);
 }
 
 function renderSnapshotSummary(container) {
@@ -562,6 +600,10 @@ function renderProtocols(container) {
           ],
           ["Trigger", protocol.trigger_condition || protocol.proposal_event_id],
           ["Scope", protocol.scope],
+          ["Applies to", protocol.affected_agents?.length ? protocol.affected_agents : "All members"],
+          ["Required steps", protocol.required_steps],
+          ["Evidence", protocol.required_fields],
+          ["Response", protocol.enforcement_action || "Not published"],
           ["Adoption", protocol.adoption_status],
           ["Origin", protocol.origin],
           ["Activation", protocol.first_tick],
@@ -614,6 +656,20 @@ function renderGenericCollection(container, values, emptyText) {
 
 function renderArtifacts(container) {
   const frame = currentFrame();
+  const atLatestTick = state.frameIndex === state.trace.frames.length - 1;
+  if (atLatestTick && state.localWorkspace?.files?.length) {
+    container.append(element("p", "", "Final shared workspace on this computer (not part of the public trace)."));
+    const list = element("div", "local-artifacts");
+    state.localWorkspace.files.forEach((file) => {
+      const card = element("article", "local-artifact");
+      card.append(element("h3", "", file.title || file.id));
+      card.append(element("small", "", `${file.id} · v${file.version} · ${asArray(file.task_ids).join(", ") || "No task link"}`));
+      card.append(element("pre", "", String(file.content ?? "")));
+      list.append(card);
+    });
+    container.append(list);
+    return;
+  }
   renderGenericCollection(
     container,
     organization(frame).artifacts || frame.artifacts,
@@ -974,6 +1030,11 @@ async function refreshTrace() {
     const next = await getJson("/api/trace");
     const oldLength = state.trace?.frames?.length || 0;
     state.trace = next;
+    try {
+      state.localWorkspace = await getJson("/api/local-workspace");
+    } catch (_) {
+      state.localWorkspace = null;
+    }
     state.frameIndex = nextFrameIndexAfterRefresh(
       state.frameIndex,
       oldLength,

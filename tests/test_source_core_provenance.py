@@ -72,7 +72,7 @@ def test_vendored_source_core_and_direct_tests_are_byte_exact() -> None:
     assert SOURCE_CORE_COMMIT == "041ddee1aa109a9b65dfdad7bdb8e258ad0a293e"
     assert SOURCE_CORE_SOURCE_PATH == "organization_core"
     assert set(SOURCE_CORE_FILE_BLOBS) == {
-        str(path.relative_to(ROOT))
+        path.relative_to(ROOT).as_posix()
         for path in sorted((ROOT / "organization_core").glob("*.py"))
     }
     for path, expected_blob in {

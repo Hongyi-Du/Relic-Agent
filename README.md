@@ -1,5 +1,7 @@
 # Relic Agent
 
+[简体中文](README_zh-CN.md) · English
+
 Relic Agent runs configurable agent organizations: members work on shared tasks,
 reflect on recurring friction, propose improvements, and adopt, enforce, revise,
 or retire organizational protocols. Generic organizations and the canonical
