@@ -438,10 +438,20 @@ class ObservabilitySpec:
 
 
 @dataclass(frozen=True)
+class SDLSpec:
+    temperature: float = 0.6
+    jitter: float = 0.05
+    base_weights: Mapping[str, float] = field(default_factory=dict)
+    profile_coefficients: tuple[Mapping[str, Any], ...] = ()
+    scorer: ToolPluginSpec | None = None
+
+
+@dataclass(frozen=True)
 class RuntimeSpec:
     seed: int = 42
     ticks: int = 72
     decision_mode: str = "profile_policy"
+    sdl: SDLSpec = field(default_factory=SDLSpec)
     provider: str = "generic"
 
 
@@ -1778,15 +1788,61 @@ def _parse_observability(value: Any) -> ObservabilitySpec:
     )
 
 
-def _parse_runtime(value: Any, providers: Mapping[str, ProviderSpec]) -> RuntimeSpec:
+def _parse_sdl(value: Any, *, base_dir: Path | None) -> SDLSpec:
+    from environments.org_env.runtime_adapter.policy import BASE_WEIGHTS
+
+    sdl = _mapping(value if value is not _MISSING else {}, "runtime.sdl")
+    _only_keys(sdl, {"temperature", "jitter", "base_weights", "profile_coefficients", "scorer"}, "runtime.sdl")
+    weights = _mapping(sdl.get("base_weights", {}), "runtime.sdl.base_weights")
+    weights = {
+        _identifier(name, "runtime.sdl.base_weights key"): _number(weight, f"runtime.sdl.base_weights.{name}")
+        for name, weight in weights.items()
+    }
+    unknown_features = sorted(set(weights) - set(BASE_WEIGHTS))
+    if unknown_features:
+        raise ConfigError(f"runtime.sdl.base_weights has unknown features: {', '.join(unknown_features)}")
+    rows = _json_list(sdl.get("profile_coefficients", []), "runtime.sdl.profile_coefficients")
+    coefficients = []
+    seen = set()
+    for index, row in enumerate(rows):
+        label = f"runtime.sdl.profile_coefficients[{index}]"
+        row = _mapping(row, label)
+        _only_keys(row, {"trait", "feature", "coefficient"}, label)
+        trait = _identifier(row.get("trait"), f"{label}.trait")
+        feature = _identifier(row.get("feature"), f"{label}.feature")
+        if feature not in BASE_WEIGHTS:
+            raise ConfigError(f"{label}.feature is not an SDL feature: {feature}")
+        key = (trait, feature)
+        if key in seen:
+            raise ConfigError(f"{label} duplicates {trait}/{feature}")
+        seen.add(key)
+        coefficients.append({"trait": trait, "feature": feature,
+                             "coefficient": _number(row.get("coefficient", _MISSING), f"{label}.coefficient")})
+    scorer = None
+    if "scorer" in sdl:
+        scorer_value = _mapping(sdl["scorer"], "runtime.sdl.scorer")
+        _only_keys(scorer_value, {"module", "path", "entrypoint", "config"}, "runtime.sdl.scorer")
+        scorer = _parse_plugin_item(sdl["scorer"], "runtime.sdl.scorer", base_dir=base_dir,
+                                    forced_id="sdl_scorer")
+    return SDLSpec(
+        temperature=_number(sdl.get("temperature", 0.6), "runtime.sdl.temperature", minimum=0.001),
+        jitter=_number(sdl.get("jitter", 0.05), "runtime.sdl.jitter", minimum=0.0),
+        base_weights=weights,
+        profile_coefficients=tuple(coefficients),
+        scorer=scorer,
+    )
+
+
+def _parse_runtime(value: Any, providers: Mapping[str, ProviderSpec], *, base_dir: Path | None) -> RuntimeSpec:
     runtime = _mapping(value if value is not _MISSING else {}, "runtime")
-    _only_keys(runtime, {"seed", "ticks", "decision_mode"}, "runtime")
+    _only_keys(runtime, {"seed", "ticks", "decision_mode", "sdl"}, "runtime")
     mode = _text(runtime.get("decision_mode", "profile_policy"), "runtime.decision_mode")
     if mode not in {"profile_policy", "llm_direct", "flat_deterministic"}:
         raise ConfigError("runtime.decision_mode must be profile_policy, llm_direct, or flat_deterministic")
     return RuntimeSpec(seed=_integer(runtime.get("seed", 42), "runtime.seed", minimum=0),
                        ticks=_integer(runtime.get("ticks", 72), "runtime.ticks", minimum=1),
-                       decision_mode=mode)
+                       decision_mode=mode,
+                       sdl=_parse_sdl(runtime.get("sdl", _MISSING), base_dir=base_dir))
 
 
 def _validate_task_agent_refs(tasks: Sequence[TaskSpec], agents: Sequence[AgentSpec]) -> None:
@@ -1982,7 +2038,7 @@ def parse_generic_config(
                          amendment_threshold=thresholds["amendment_threshold"])
     protocols = replace(protocols, **thresholds)
     learning = replace(learning, protocol=replace(learning.protocol, **thresholds))
-    runtime = _parse_runtime(root.get("runtime", _MISSING), providers)
+    runtime = _parse_runtime(root.get("runtime", _MISSING), providers, base_dir=base_dir)
     prompts = _parse_prompts(root.get("prompts", _MISSING), organization)
     for asset in prompts.custom_prompt_assets_path:
         path = Path(asset).expanduser()

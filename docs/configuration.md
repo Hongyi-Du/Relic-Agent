@@ -15,6 +15,56 @@ The configuration sections are `organization`, `providers`, `agents`, `tools`,
 `observability`. [Customization](customization.md) gives the field index;
 [examples](../examples/README.md) contain runnable configurations.
 
+## SDL decision policy
+
+`runtime.decision_mode` selects `profile_policy` (seeded SDL), `flat_deterministic`
+(profile-off argmax), or `llm_direct` (provider chooses from the allowed candidate
+pool). In generic mode, `runtime.sdl` customizes the SDL score and sampling
+without editing the canonical source B3 preset:
+
+```yaml
+runtime:
+  decision_mode: profile_policy
+  sdl:
+    temperature: 0.4
+    jitter: 0.02
+    base_weights: {progress_gain: 0.9, review_quality_gain: 0.5}
+    profile_coefficients:
+      - {trait: curiosity, feature: learning_gain, coefficient: 0.7}
+```
+
+Weights override the named dimensions of the existing 55-dimensional feature
+vector; unspecified weights retain their defaults. A trait/feature pair
+overrides that pair's coefficient; all other pairs retain their defaults. An
+unknown feature, non-finite coefficient, non-positive temperature, or negative
+jitter fails validation. To replace weighted scoring entirely, configure a
+trusted Python scorer (for example
+[`examples/generic/sdl_score.py`](../examples/generic/sdl_score.py)):
+
+```yaml
+runtime:
+  decision_mode: profile_policy
+  sdl:
+    scorer:
+      path: sdl_score.py
+      entrypoint: execute
+      config: {progress: 2.0, review: 1.0, tool_bonus: 0.3}
+```
+
+`execute(features, context)` returns one finite numeric utility. `features` is
+the candidate's feature dictionary; `context` is a snapshot containing
+`agent_id`, `role`, `profile`, `skills`, `tick`, `action`, `parameters`, and the
+scorer's `config`. Relative paths resolve from the YAML directory. This is
+trusted local Python code, like a tool plugin, and is not sandboxed or timed
+out. The existing candidate menu,
+permission checks, governance gates, and seeded sampler remain in force. A
+custom scorer replaces the weighted score, so `base_weights` and
+`profile_coefficients` do not affect it. Any non-default SDL override disables
+the source policy's linear-profile counterfactual metric for that run, while
+retaining candidate scores and choices in policy traces. `llm_direct` uses the scorer only for
+explanatory policy traces, not to override the provider's accepted choice.
+The source B3 schema does not accept `runtime.sdl`; its policy stays canonical.
+
 ## Precedence
 
 Explicit CLI overrides take precedence over configuration. Secrets and provider

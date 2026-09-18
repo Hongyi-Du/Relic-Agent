@@ -1,0 +1,54 @@
+schema_version: relic-agent-v2
+organization:
+  id: sdl-example-team
+  name: SDL Example Team
+  brief: Write a concise research note and review it.
+  shared_goals: [Deliver a reviewed research note]
+  channels: [general]
+providers:
+  local:
+    type: mock
+    default_model: deterministic-researcher
+agents:
+  - id: researcher
+    display_name: Researcher
+    role: research_lead
+    provider: local
+    skills: {research: 0.9}
+    tools: [files, task_board, messaging]
+  - id: reviewer
+    display_name: Reviewer
+    role: reviewer
+    provider: local
+    skills: {review: 0.9}
+    tools: [files, task_board, messaging]
+    permissions: [review]
+tools:
+  builtins: [files, task_board, messaging]
+tasks:
+  - id: note
+    title: Write a research note
+    owner: researcher
+    collaborators: [reviewer]
+    expected_deliverables: [note]
+    acceptance_criteria: [The note contains a conclusion]
+governance:
+  approval_mode: auto
+  approver_members: [reviewer]
+  quorum: 1
+protocols:
+  initial: []
+runtime:
+  seed: 7
+  ticks: 12
+  decision_mode: profile_policy
+  sdl:
+    temperature: 0.4
+    jitter: 0.02
+    scorer:
+      path: sdl_score.py
+      entrypoint: execute
+      config: {progress: 2.0, review: 1.0, tool_bonus: 0.3}
+observability:
+  public_trace: true
+  inspector: true

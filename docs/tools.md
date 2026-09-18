@@ -6,6 +6,23 @@ workspace content). Declare them in `tools.builtins` and grant each agent only
 its selected `agents[].tools`. Agent and role permissions govern restricted
 operations such as assigning other members' tasks.
 
+The four names describe what the framework supports, not what every run grants.
+`configs/default.yaml` and `configs/minimal.yaml` register `files`, `task_board`,
+and `messaging`; they do not enable `search`. Built-in operations are:
+
+| Tool | Operations |
+|---|---|
+| `files` | `list`, `read`, `write` virtual workspace artifacts |
+| `task_board` | `list`, `claim`, `assign`, `complete` tasks |
+| `messaging` | Send text to an authorized channel |
+| `search` | Search files visible to the acting agent |
+
+There is no built-in shell, browser, Git, or network tool. Application developers
+can update the available catalog by editing `tools.builtins`, registering a
+trusted local Python function under `tools.plugins`, and granting its ID in
+`agents[].tools`. Plugin code and its schema are loaded at validation/run startup;
+changes take effect in the next run, not by hot-reloading a running organization.
+
 A plugin is a trusted Python function:
 
 ```python
@@ -68,6 +85,8 @@ Deterministic tasks can request a plugin through
 The configured owner must have the tool grant; successful calls are required
 before task completion. In `runtime.decision_mode: llm_direct`, the selected
 agent sees its granted tool schemas and can choose its own plugin arguments.
+In `profile_policy`, give a plugin explicit arguments through task metadata;
+the deterministic chooser does not invent application-specific arguments.
 
 Learned tools use the same `ToolSpec` objects produced by proposal adoption.
 Generic mode exposes an active spec only when its `callable_by_agents` and

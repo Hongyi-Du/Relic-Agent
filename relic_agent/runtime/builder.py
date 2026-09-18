@@ -21,7 +21,7 @@ from environments.org_env.config.scenarios import default_scenario
 from environments.org_env.experiments.ablations import EXTERNAL_BRIDGE, resolve_mechanism_ablations
 from environments.org_env.runtime_adapter.execution import ExecutionResult
 from environments.org_env.runtime_adapter.feature_extractor import OrgFeatureExtractor
-from relic_agent.config_schema import TaskSpec
+from relic_agent.config_schema import TaskSpec, _import_plugin
 from relic_agent.runtime.providers import ProviderRegistry, ProviderError
 from relic_agent.runtime.tools import GenericToolRegistry
 
@@ -771,6 +771,18 @@ def build_generic_world(config):
     world.approval_mode = data["governance"]["approval_mode"]
     world._wire_loop()
     world._loop.update(mapper=GenericActionMapper(), execution=GenericExecution(), features=GenericFeatures())
+    # SDL customization belongs to generic applications only. The source B3
+    # builder never reads this section, preserving its published policy.
+    sdl = data["runtime"]["sdl"]
+    if (sdl["base_weights"] or sdl["profile_coefficients"] or sdl["scorer"]
+            or sdl["temperature"] != 0.6 or sdl["jitter"] != 0.05):
+        from relic_agent.runtime.sdl import ConfigurableOrgPolicy
+        scorer = None
+        if scorer_spec := sdl["scorer"]:
+            module = _import_plugin(scorer_spec["module"], scorer_spec["path"],
+                                    "runtime.sdl.scorer", config.source_path.parent)
+            scorer = getattr(module, scorer_spec["entrypoint"] or "execute")
+        world._loop["policy"] = ConfigurableOrgPolicy(world._loop["policy"], sdl, scorer)
     from relic_agent.runtime.lifecycle import configure_lifecycle
     configure_lifecycle(world, config, config.source_path.parent)
     if data["runtime"]["decision_mode"] == "flat_deterministic":

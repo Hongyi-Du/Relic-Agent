@@ -9,6 +9,7 @@ Run from the repository root after installing with `uv sync --extra dev`:
 | C: Mixed models | `configs/mixed-model.yaml` | Independent provider/model routing for each agent |
 | D: Custom tool | `examples/generic/custom-tool.yaml` | Plugin import, permission grant, and execution |
 | E: Governance | `configs/custom-governance.yaml` | Configured approvers/quorum and an initial protocol |
+| F: Custom SDL | `examples/generic/custom-sdl.yaml` | App-specific scorer and seeded sampling settings |
 
 ```bash
 uv run relic-agent validate --config configs/minimal.yaml
@@ -17,6 +18,7 @@ uv run relic-agent run --config configs/default.yaml --run-id example-b
 uv run relic-agent run --config configs/mixed-model.yaml --run-id example-c
 uv run relic-agent run --config examples/generic/custom-tool.yaml --run-id example-d
 uv run relic-agent run --config configs/custom-governance.yaml --run-id example-e
+uv run relic-agent run --config examples/generic/custom-sdl.yaml --run-id example-f
 uv run relic-agent inspect --trace outputs/example-e/trace.json
 ```
 

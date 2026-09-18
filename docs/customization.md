@@ -24,6 +24,8 @@ running; validation never calls a model.
 | Loaded protocols | protocol package and organization.yaml | protocols.packages | No |
 | Reflection cadence | organization.yaml | learning.reflection | No |
 | Other learning mechanisms | organization.yaml | learning | No |
+| SDL weights and sampling | organization.yaml | runtime.sdl | No |
+| New SDL scoring algorithm | scorer Python file and organization.yaml | runtime.sdl.scorer | Plugin only |
 | Prompt context | prompts/ and organization.yaml | prompts | No |
 | API credentials | .env | providers.*.api_key_env | No |
 | Inspector and public trace | CLI and organization.yaml | observability | No |
