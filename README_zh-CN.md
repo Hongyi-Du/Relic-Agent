@@ -44,4 +44,13 @@ uv run --extra dev pytest
 uv run --extra dev ruff check relic_agent tests
 ```
 
-Bash 和 PowerShell 启动器最终调用同一 CLI。历史提取与来源记录保留在 `docs/` 供维护者核对。软件许可和商业授权条款尚需版权方确认，本仓库当前不能被理解为已经授予某一开源或商业许可。
+Bash 和 PowerShell 启动器最终调用同一 CLI。历史提取与来源记录保留在 `docs/` 供维护者核对。
+
+## 许可
+
+Relic Agent 的原创源码以 [PolyForm Noncommercial License 1.0.0](LICENSE)
+进行源码公开：遵守协议时，可以免费用于非商业目的，也可以修改和分发。
+任何商业用途都需要事先取得 Hongyi Du 的单独书面授权；参见
+[商业授权说明](COMMERCIAL_LICENSE.md)。
+
+仓库中的第三方组件继续适用各自的许可证；仓库级许可证不会替代这些条款。

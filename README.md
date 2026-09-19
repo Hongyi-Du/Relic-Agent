@@ -67,3 +67,14 @@ The existing Bash and PowerShell launchers forward to the same CLI. For Docker,
 use `docker compose run --rm relic-agent-runtime run-minimal`; mount your project
 and output directory when using custom configuration. Historical extraction
 and provenance notes remain in `docs/` as reference material.
+
+## License
+
+Relic Agent's original source is source-available under the
+[PolyForm Noncommercial License 1.0.0](LICENSE): noncommercial use,
+modification, and distribution are permitted under its terms. Commercial use
+requires a separate written license from Hongyi Du; see
+[Commercial licensing](COMMERCIAL_LICENSE.md).
+
+Third-party components retain their own licenses. The repository-level license
+does not replace those terms.

@@ -29,6 +29,6 @@ artifacts, cross-platform byte identity, and historical artifact reconstruction
 remain outside this stage. Tests stay in the ordinary repository; a `full-tests`
 branch is not required.
 
-The repository does not yet publish a software license or commercial license
-terms. Those documents require a decision from the rights holder; their absence
-must not be presented as a grant of reuse rights.
+The repository's original source is available under the PolyForm Noncommercial
+License 1.0.0. Commercial use requires a separate written license; third-party
+components remain subject to their own terms.
