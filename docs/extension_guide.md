@@ -15,3 +15,8 @@ members and source behavior. Generic mode builds a different initial world and
 then runs the same organization engine and lifecycle managers.
 
 See [customization](customization.md) for the complete configuration index.
+When changing the environment itself, follow the
+[environment porting guide](environment_porting.md)
+([简体中文](environment_porting_zh-CN.md)): action scoring, executable protocol
+bindings, and episode boundaries require domain-specific adaptation beyond tool
+registration.

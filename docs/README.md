@@ -15,6 +15,8 @@ and external evaluators belong to the Relic research repository.
   public observability boundary.
 - [Extension guide](extension_guide.md) — supported customization and current
   extension boundaries.
+- [Environment porting](environment_porting.md) / [环境移植指南](environment_porting_zh-CN.md)
+  — environment-specific SDL policies, protocol–action bindings, and episode/reflection semantics.
 - [Inspector](inspector.md) — trace validation, privacy, replay, and live
   viewing semantics.
 - [Reproduction guide](reproduction.md) — repeatable local/Docker commands and
