@@ -56,6 +56,24 @@ memory, raw reflection text, prompts, and provider traffic. The original B3
 preset remains in `configs/source-b3.yaml`; paper experiment matrices and
 external benchmark scoring belong to the separate Relic repository.
 
+## Porting to a new environment
+
+Changing an environment means adapting its action and event semantics, not just
+registering tools or changing the organization configuration. Three parts need
+an explicit review on every port:
+
+| Part | What the new environment must define |
+|---|---|
+| **SDL action policy, if used** | Decide whether SDL should choose actions. For a stable, long-lived environment, define features and scoring for every relevant action, including its parameters and current state. Existing research-workflow scores are not a ready-made policy for another domain. |
+| **Protocol–action bindings** | Map protocols to the new actions, their scope, required evidence, and executable checks. Place blocking checks before the corresponding side effects; protocol text alone does not enforce a rule. |
+| **Episodes and reflection** | Define which events open, belong to, and close an episode, then choose when and for whom reflection runs. Episode boundaries and outcomes depend on the environment. |
+
+In the current config, `runtime.decision_mode: llm_direct` bypasses SDL action
+selection; `flat_deterministic` still scores actions. The shared organization
+lifecycle can be reused, while new domain semantics need an adapter.
+See the [environment porting guide](docs/environment_porting.md) for supported
+configuration, code extension points, and a port validation checklist.
+
 ## Development
 
 ```bash
