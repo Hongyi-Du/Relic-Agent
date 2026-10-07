@@ -1,5 +1,13 @@
 # Relic Agent
 
+[![arXiv: 2609.32965](https://img.shields.io/badge/arXiv-2609.32965-b31b1b)](https://arxiv.org/abs/2609.32965)
+[![Website: Relic](https://img.shields.io/badge/Website-Relic-24354b)](https://hongyidu.ai/relic/en)
+[![Experience: Interactive](https://img.shields.io/badge/Experience-Interactive-8b2942)](https://hongyidu.ai/relic/en/experience)
+[![Docs: Guide](https://img.shields.io/badge/Docs-Guide-526c88)](docs/README.md)
+[![Python: 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776ab?logo=python&logoColor=white)](docs/installation.md)
+[![CI](https://img.shields.io/github/actions/workflow/status/Hongyi-Du/Relic-Agent/release-ci.yml?branch=main&event=push&label=CI)](https://github.com/Hongyi-Du/Relic-Agent/actions/workflows/release-ci.yml)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-6c5a7b)](LICENSE)
+
 简体中文 · [English](README.md)
 
 Relic Agent 用配置文件运行可定制的 agent 组织：成员完成共享任务、从工作摩擦中反思和提出改进，并通过治理流程采纳、执行、修订或废止组织协议。通用组织和 Relic B3 预设共用 `OrgWorld.step()` 生命周期。论文实验矩阵和外部基准评测属于独立的 Relic 仓库，不是这里的默认运行结果。
