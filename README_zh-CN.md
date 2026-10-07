@@ -1,12 +1,12 @@
 # Relic Agent
 
 [![arXiv: 2609.32965](https://img.shields.io/badge/arXiv-2609.32965-b31b1b)](https://arxiv.org/abs/2609.32965)
-[![Website: Relic](https://img.shields.io/badge/Website-Relic-24354b)](https://hongyidu.ai/relic/en)
-[![Experience: Interactive](https://img.shields.io/badge/Experience-Interactive-8b2942)](https://hongyidu.ai/relic/en/experience)
-[![Docs: Guide](https://img.shields.io/badge/Docs-Guide-526c88)](docs/README.md)
+[![项目主页](https://img.shields.io/badge/Website-Relic-24354b)](https://hongyidu.ai/relic/zh)
+[![交互体验](https://img.shields.io/badge/Experience-Interactive-8b2942)](https://hongyidu.ai/relic/zh/experience)
+[![文档](https://img.shields.io/badge/Docs-Guide-526c88)](docs/README.md)
 [![Python: 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776ab?logo=python&logoColor=white)](docs/installation.md)
-[![CI](https://img.shields.io/github/actions/workflow/status/Hongyi-Du/Relic-Agent/release-ci.yml?branch=main&event=push&label=CI)](https://github.com/Hongyi-Du/Relic-Agent/actions/workflows/release-ci.yml)
-[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-6c5a7b)](LICENSE)
+[![CI 状态](https://img.shields.io/github/actions/workflow/status/Hongyi-Du/Relic-Agent/release-ci.yml?branch=main&event=push&label=CI)](https://github.com/Hongyi-Du/Relic-Agent/actions/workflows/release-ci.yml)
+[![许可证：PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-6c5a7b)](LICENSE)
 
 简体中文 · [English](README.md)
 
